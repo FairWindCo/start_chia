@@ -71,11 +71,11 @@ def get_threads_configs():
 
 
 class ChieThread(Thread):
-    def __init__(self, name, file, cmd, curent, last):
+    def __init__(self, name, file, cmd, current, last):
         super().__init__(name=name)
         self.file = file
         self.cmd = cmd
-        self.current = curent
+        self.current = current
         self.last = last
 
     def write_last(self):
@@ -86,21 +86,28 @@ class ChieThread(Thread):
         # print(f'INIT COMMAND {self.cmd} {self.current} {self.last}')
         with open(f'{self.name}.log', 'at') as log:
             log.write(
-                f'START at {datetime.now().strftime("%d.%m.%Y %H:%M:%S")} WORK from {self.current} to {self.last}\n')
+                f'{datetime.now().strftime("%d.%m.%Y %H:%M:%S")} START WORK from {self.current} to {self.last}\n')
             for ind in range(self.current, self.last):
                 try:
                     start_time = datetime.now()
-                    process = subprocess.run(['powershell', self.cmd])
-                    time = datetime.now() - start_time
-                    print(f'COMMAND {self.cmd}')
-                    # process.wait()
-                    self.current = ind + 1
-                    self.write_last()
-                    current_date = datetime.now()
-                    log.write(
-                        f'{current_date.strftime("%d.%m.%Y %H:%M:%S")} plot {self.current:3d} created at {time}\n')
+                    process = subprocess.run(['powershell', self.cmd], stderr=subprocess.PIPE)
+                    if process.returncode == 0:
+                        time = datetime.now() - start_time
+                        print(f'COMMAND {self.cmd}')
+                        # process.wait()
+                        self.current = ind + 1
+                        self.write_last()
+                        current_date = datetime.now()
+                        log.write(
+                            f'{current_date.strftime("%d.%m.%Y %H:%M:%S")} plot {self.current:3d} created at {time}\n')
+                    else:
+                        current_date = datetime.now()
+                        error_text = process.stderr.decode('cp866')
+                        log.write(
+                            f'{current_date.strftime("%d.%m.%Y %H:%M:%S")} ERROR {self.current:3d}: {error_text}\n')
                 except Exception as e:
-                    log.write(f'ERROR {e} plot {self.current} created \n\n')
+                    current_date = datetime.now()
+                    log.write(f'{current_date.strftime("%d.%m.%Y %H:%M:%S")} ERROR {e} plot {self.current} created \n\n')
 
 
 class ChieThreadConfig:
@@ -124,7 +131,7 @@ class ChieThreadConfig:
                         f'RE START NEW WORK FROM {created} plots\n')
                 return int(created)
 
-        with open(f'{self.name}.log', 'wt') as log:
+        with open(f'{self.name}-{number}.log', 'wt') as log:
             log.write(
                 f'START NEW WORK need create {self.num_plots} plots\n')
         return 0
