@@ -386,9 +386,11 @@ if __name__ == '__main__':
 
     def line_by_line(file_path):
         if Path(file_path).exists():
+            yield '<a href="/">НАЗАД</a><BR>'
             with open(file_path, 'rt') as file:
                 for row in file:
-                    yield f'{row}\n'
+                    yield f'{row}<BR>\n'
+            yield '<a href="/">НАЗАД</a>'
         else:
             raise Exception(f'FILE {file_path} not found')
 
@@ -403,7 +405,7 @@ if __name__ == '__main__':
             # except Exception as e:
             #     print(f'EXCEPTION {e}')
             #     abort(500)
-            return Response(line_by_line(path_to_log_file), mimetype='text/csv')
+            return Response(line_by_line(path_to_log_file))
         else:
             abort(404)
 
