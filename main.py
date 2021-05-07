@@ -137,7 +137,6 @@ def get_command_for_execute_with_shell(cmd, config):
     run_in_shell = check_bool(config.get('start_shell', False))
     shelling = check_bool(config.get('p_open_shell', False))
     shell_name = config.get('shell_name', '')
-    print([el for el in cmd.split(' ') if el])
     return [shell_name, cmd] if run_in_shell and shell_name else [el for el in cmd.split(' ') if el] if not shelling else cmd
 
 
