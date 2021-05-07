@@ -105,7 +105,7 @@ def get_threads_configs():
     if not os.path.exists('config.ini'):
         with open('config.ini', 'wt') as file:
             file.write('[default]\n')
-            file.writelines([f'{k}={v if v is not None else ""}' for k, v in default_config.items()])
+            file.writelines([f'{k}={v if v is not None else ""}\n' for k, v in default_config.items()])
     config = configparser.ConfigParser()
     config.read('config.ini')
     if 'default' in config.sections():
