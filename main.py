@@ -129,7 +129,7 @@ def get_threads_configs():
     return config_thread, default_config
 
 
-matching = re.compile(r'Starting phase ([0-9]*/[0-9]*):\s*([A-Z][\w\d\s]+)\.\.\.\s+([A-Z][\w\d\s:]+)$')
+matching = re.compile(r'Starting phase ([0-9]*/[0-9]*):\s*([A-Z][\w\d\s:\\\-".]+)\.\.\.\s+([A-Z][\w\d\s:]+)$')
 matching_time = re.compile(r'Time for phase ([0-9]+) = ([0-9.]+) seconds. CPU \(([0-9.]+)%\) ([\w\d\s:]*)$')
 
 
