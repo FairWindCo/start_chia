@@ -100,7 +100,7 @@ def get_threads_configs():
                       'recheck_work_dir': False,
                       'fingerprint': None, 'pool_pub_key': None, 'farmer_pub_key': None,
                       'start_node': None, 'set_peer_address': None,
-                      'start_shell': False, 'shell_name': 'powershell', 'p_open_shell': False,
+                      'start_shell': False, 'shell_name': 'powershell', 'p_open_shell': False, 'code_page': 'cp1251',
                       'bitfield_disable': 'False'}
     if not os.path.exists('config.ini'):
         with open('config.ini', 'wt') as file:
@@ -135,8 +135,11 @@ matching_time = re.compile(r'Time for phase ([0-9]+) = ([0-9.]+) seconds. CPU \(
 
 def get_command_for_execute_with_shell(cmd, config):
     run_in_shell = check_bool(config.get('start_shell', False))
+    shelling = check_bool(config.get('p_open_shell', False))
     shell_name = config.get('shell_name', '')
-    return [shell_name, cmd] if run_in_shell and shell_name else [cmd]
+    print([el for el in cmd.split(' ') if el])
+    return [shell_name, cmd] if run_in_shell and shell_name else [el for el in cmd.split(' ') if el] if not shelling else cmd
+
 
 class ChieThread(Thread):
     def __init__(self, name, file, cmd, current, last, temp_dir, config_for_thread):
@@ -160,6 +163,13 @@ class ChieThread(Thread):
         self.end_phase_info = ''
         self.start_phase_info = ''
         self.status = 'INIT'
+        if os.name == 'nt':
+            if self.start_shell:
+                self.code_page = 'cp866'
+            else:
+                self.code_page = 'cp1251'
+        else:
+            self.code_page = self.config.get('code_page', 'utf8')
 
     def __del__(self):
         if self.log:
@@ -193,7 +203,6 @@ class ChieThread(Thread):
             except OSError as e:
                 self.write_log(f'ERROR in {f} - {e.strerror} ')
 
-
     def run(self) -> None:
         self.clear_temp()
         pause = self.config.get('pause_before_start', 0)
@@ -216,7 +225,7 @@ class ChieThread(Thread):
                     self.process = subprocess.Popen(get_command_for_execute_with_shell(self.cmd, self.config),
                                                     stderr=subprocess.PIPE,
                                                     stdout=subprocess.PIPE,
-                                                    shell=self.start_shell, encoding='cp866',
+                                                    shell=self.start_shell, encoding=self.code_page,
                                                     universal_newlines=True)
                 while not self.need_stop and self.process.poll() is None:
                     text = self.process.stdout.readline()
@@ -262,8 +271,8 @@ class ChieThread(Thread):
                 chia_cmd_path = self.config.get('chia_path')
                 if chia_cmd_path:
                     work_dir = self.config['work_dir']
-                    subprocess.Popen(get_command_for_execute_with_shell(f'{chia_cmd_path} --final_dir "{work_dir}"',
-                                                                        self.config))
+                    subprocess.Popen(get_command_for_execute_with_shell(f'{chia_cmd_path} plots add -d "{work_dir}"',
+                                                                        self.config), shell=self.start_shell)
                     self.status = 'РЕГИСТРАЦИЯ КАТАЛОГА'
 
             if self.need_stop_iteration:
@@ -601,11 +610,13 @@ if __name__ == '__main__':
         path = processor.main_config['chia_path']
         if path:
             peer_config = processor.main_config.get('set_peer_address', None)
+            shelling = processor.main_config.get('p_open_shell', False)
             shel = subprocess.Popen(
                 get_command_for_execute_with_shell(f'{path} configure --set-farmer-peer {node_start} -upnp false',
-                                                   processor.main_config))
+                                                   processor.main_config), shell=shelling)
             shel.wait(10)
-            subprocess.Popen(get_command_for_execute_with_shell(f'{path} start {peer_config}', processor.main_config))
+            subprocess.Popen(get_command_for_execute_with_shell(f'{path} start {peer_config}', processor.main_config),
+                             shell=shelling)
 
     processor.start()
     while processor.web_server_running:
