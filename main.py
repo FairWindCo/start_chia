@@ -270,7 +270,7 @@ class ChieThread(Thread):
                 chia_cmd_path = self.config.get('chia_path')
                 if chia_cmd_path:
                     work_dir = self.config['work_dir']
-                    subprocess.Popen(get_command_for_execute_with_shell(f'{chia_cmd_path} plots add -d "{work_dir}"',
+                    subprocess.Popen(get_command_for_execute_with_shell(f'{chia_cmd_path} plots add -d {work_dir}',
                                                                         self.config), shell=self.start_shell)
                     self.status = 'РЕГИСТРАЦИЯ КАТАЛОГА'
 
