@@ -135,9 +135,10 @@ matching_time = re.compile(r'Time for phase ([0-9]+) = ([0-9.]+) seconds. CPU \(
 
 def get_command_for_execute_with_shell(cmd, config):
     run_in_shell = check_bool(config.get('start_shell', False))
-    shelling = check_bool(config.get('p_open_shell', False))
+    shelling_info = check_bool(config.get('p_open_shell', False))
     shell_name = config.get('shell_name', '')
-    return [shell_name, cmd] if run_in_shell and shell_name else [el for el in cmd.split(' ') if el] if not shelling else cmd
+    return [shell_name, cmd] if run_in_shell and shell_name else [el for el in cmd.split(' ') if
+                                                                  el] if not shelling_info else cmd
 
 
 class ChieThread(Thread):
@@ -162,6 +163,7 @@ class ChieThread(Thread):
         self.end_phase_info = ''
         self.start_phase_info = ''
         self.status = 'INIT'
+        self.phase_stat = {}
         if os.name == 'nt':
             if self.start_shell:
                 self.code_page = 'cp866'
@@ -235,7 +237,30 @@ class ChieThread(Thread):
                     else:
                         result = matching_time.search(text)
                         if result:
-                            self.end_phase_info = f'Фаза {result.group(1)} - завершина CPU {result.group(2)}% [{result.group(3)}]'
+                            seconds = float(result.group(2))
+                            minutes = math.ceil(seconds / 60)
+                            name = f'Фаза {result.group(1)}'
+                            statistics = self.phase_stat.get(name, {
+                                'Последнее значение': 0.0,
+                                'Минимальное значение значение': 0.0,
+                                'Максимальное значение значение': 0.0,
+                                'Средне значение': 0.0,
+                                'Количество': 0.0,
+                                'Сумарное': 0.0,
+                            })
+
+                            statistics['Последнее значение'] = seconds
+                            if seconds > statistics['Максимальное значение значение']:
+                                statistics['Максимальное значение значение'] = seconds
+                            if seconds < statistics['Минимальное значение значение']:
+                                statistics['Минимальное значение значение'] = seconds
+                            statistics['Сумарное'] = statistics['Сумарное'] + seconds
+                            statistics['Количество'] = (self.current + 1)
+                            statistics['Средне значение'] = statistics['Сумарное'] / (self.current + 1)
+
+                            self.phase_stat[name] = statistics
+                            self.end_phase_info = f'Фаза {result.group(1)} - \
+                            завершина за {minutes} мин CPU {result.group(3)}% [{result.group(4)}]'
 
                     self.write_log(text, False, need_flush=True)
                 if self.need_stop and self.process.poll() is None:
@@ -282,6 +307,10 @@ class ChieThread(Thread):
         self.process = None
         self.need_stop = True
         self.phase = f'ПРОЦЕСС ЗАВЕРШЕН! {datetime.now()}'
+        for name, stat in self.phase_stat.items():
+            self.write_log(name)
+            for k, v in stat.items():
+                self.write_log(f'{k}:{v:10.f}')
         self.log.close()
         self.log = None
 
@@ -334,9 +363,9 @@ class ChieThreadConfig:
         return 0
 
     def get_threads(self):
-        result = [ChieThread(f'{self.name}-{index}', f'{self.name}_{index}', self.command, number, self.num_plots,
+        result = [ChieThread(f'{self.name}-{index_el}', f'{self.name}_{index_el}', self.command, number, self.num_plots,
                              self.config['temp_dir'], self.config) for
-                  index, number in
+                  index_el, number in
                   enumerate(self.process)]
         self.process = [0 for _ in range(self.num_parallel)]
         return result
@@ -424,14 +453,14 @@ if __name__ == '__main__':
                                f'из {(di[1].total / GIGABYTE):.2f}Гб  {di[1].percent}%</li>'
                                for di in disk_info_data])
         context = '\n'.join(
-            [f'<li>{index:2d}.ПОТОК {thread.name} ВЫПОЛНЕНО {thread.current} из {thread.last} <BR>\
+            [f'<li>{index_el:2d}.ПОТОК {thread.name} ВЫПОЛНЕНО {thread.current} из {thread.last} <BR>\
                 ТЕКУЩАЯ ФАЗА {thread.phase} {thread.start_phase_info}<BR>\
                 ЗАВЕРШЕННАЯ ФАЗА: {thread.end_phase_info} <BR>\
                 ВРЕМЯ ПОСЛЕДНЕГО ПЛОТА {thread.last_time}<BR>\
                 СРЕДНЕЕ ВРЕМЯ ПЛОТА {thread.ave_time}<BR>\
                 <a href="/view_log/{thread.name}">VIEW LOG</a> \
                 {thread.status}\
-                </li>' for index, thread in
+                </li>' for index_el, thread in
              enumerate(processor.threads)])
         return f'<HTML><HEAD></HEAD> \
                  <BODY> \
@@ -446,7 +475,8 @@ if __name__ == '__main__':
                  </div>\
                  <a href="/">ОБНОВИТЬ</a> <h5>ПРОЦЕССЫ</h5>\
                  <UL>{context}</UL><div>\
-                 <a href="/">ОБНОВИТЬ</a><br><a href="/control">УПРАВЛЕНИЕ</a></div></BODY></HTML>'
+                 <a href="/">ОБНОВИТЬ</a><br><a href="/stat">СТАТИСТИКА</a><br>\
+                 <a href="/control">УПРАВЛЕНИЕ</a></div></BODY></HTML>'
 
 
     @app.route('/control')
@@ -455,12 +485,12 @@ if __name__ == '__main__':
         cpu_percent = psutil.cpu_percent()
         memory = psutil.virtual_memory()
         context = '\n'.join(
-            [f'<li>{index:2d}.ПОТОК {thread.name} ВЫПОЛНЕНО {thread.current} из {thread.last} <BR>\
+            [f'<li>{i:2d}.ПОТОК {thread.name} ВЫПОЛНЕНО {thread.current} из {thread.last} <BR>\
                 ТЕКУЩАЯ ФАЗА {thread.phase} ВРЕМЯ ПОСЛЕДНЕГО ПЛОТА В ПОТОКЕ {thread.last_time}<BR>\
                 <a href="/view_log/{thread.name}">VIEW LOG</a> \
                 <a href="/log{thread.name}">СКАЧАТЬ LOG</a> \
-                <a href="/stop{index}">ОСТАНОВИТЬ ПОТОК</a> \
-                </li>' for index, thread in
+                <a href="/stop{i}">ОСТАНОВИТЬ ПОТОК</a> \
+                </li>' for i, thread in
              enumerate(processor.threads)])
         return f'<HTML><HEAD></HEAD> \
                  <BODY> \
@@ -521,13 +551,26 @@ if __name__ == '__main__':
         return f'<HTML><HEAD></HEAD><BODY>{context}<a href="/control">BACK</a><a href="/">HOME</a></BODY></HTML>'
 
 
-    @app.route('/stop<index>')
-    def stop(index):
-        if not index.isdecimal():
+    @app.route('/stat')
+    def show_stat():
+        def converter(phase_name, phase_info):
+            return get_html_dict(phase_info, phase_name)
+
+        threads_info = '\n'.join([f'<div><h3>{thread.name}</h3><h4>{thread.cmd}</h4>\
+                        {"".join(map(converter, thread.phase_stat.items()))}</div>'
+                                  for thread in processor.threads])
+
+        context = f'<h1>Стататистика по фазам</h1>{threads_info}'
+        return f'<HTML><HEAD></HEAD><BODY>{context}<a href="/">HOME</a></BODY></HTML>'
+
+
+    @app.route('/stop<stop_index>')
+    def stop(stop_index):
+        if not stop_index.isdecimal():
             abort(404)
-        index = int(index)
-        if 0 <= index < len(processor.threads):
-            processor.threads[index].kill()
+        stop_index = int(stop_index)
+        if 0 <= stop_index < len(processor.threads):
+            processor.threads[stop_index].kill()
             context = f'THREAD STOPPED!<BR><<a href="/control">BACK</a><a href="/">HOME</a>'
             return f'<HTML><HEAD></HEAD><BODY><UL>{context}</UL></BODY></HTML>'
         else:
