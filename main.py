@@ -129,7 +129,12 @@ def get_threads_configs():
     return config_thread, default_config
 
 
-matching = re.compile(r'Starting phase ([0-9]*/[0-9]*):\s*([A-Z][\w\d\s:\\\-".]+)\.\.\.\s+([A-Z][\w\d\s:]+)$')
+# matching = re.compile(r'Starting phase ([0-9]*/[0-9]*):\s*([A-Z][\w\d\s:\\\-".]+)\.\.\.\s+([A-Z][\w\d\s:]+)$')
+
+    # r'Starting phase ([0-9]*\/[0-9]*):\s*(.*)\s+([A-Z][a-z]{2,4}\s+[A-Z][a-z]{2,10}\s+\d{1,2}\s+\d{1,2}:\d{1,2}:\d{1,2}\s+\d{2,4}.*)$')
+
+matching = re.compile(r'Starting phase ([0-9]*\/[0-9]*):')
+ex_data = re.compile(r'\s*(.*)\s+([A-Z][a-z]{2,4}\s+[A-Z][a-z]{2,10}\s+\d{1,2}\s+\d{1,2}:\d{1,2}:\d{1,2}\s+\d{2,4}.*)$')
 matching_time = re.compile(r'Time for phase ([0-9]+) = ([0-9.]+) seconds. CPU \(([0-9.]+)%\) ([\w\d\s:]*)$')
 
 
@@ -233,7 +238,9 @@ class ChieThread(Thread):
                     result = matching.search(text)
                     if result:
                         self.phase = result.group(1)
-                        self.start_phase_info = f'{result.group(2)} [{result.group(3)}]'
+                        result = ex_data.search(text, result.end())
+                        if result:
+                            self.start_phase_info = f'{result.group(2)} [{result.group(3)}]'
                     else:
                         result = matching_time.search(text)
                         if result:
