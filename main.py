@@ -1,5 +1,6 @@
 import atexit
 import configparser
+import math
 import os
 import re
 import signal
@@ -79,10 +80,12 @@ def get_threads_configs():
                       'pause_before_start': 0,
                       'recheck_work_dir': False,
                       'start_node': None,
+                      'start_shell': True,
                       # 'set_peer_address': '',
                       'bitfield_disable': 'False'}
     if 'default' in config.sections():
         default_config = read_params_from_section(config, 'default', default_config)
+
     if 'chia_path' not in default_config or not Path(default_config['chia_path']).exists():
         if default_config.get('auto_find_exe', True):
             path_chia_exe = find_chia()
@@ -101,7 +104,12 @@ def get_threads_configs():
     return config_thread, default_config
 
 
-matching = re.compile(r'Starting phase ([0-9]*/[0-9]*)')
+matching = re.compile(r'Starting phase ([0-9]*/[0-9]*):\s*([A-Z][\w\d\s]+)\.\.\.\s+([A-Z][\w\d\s:]+)$')
+matching_time = re.compile(r'Time for phase ([0-9]+) = ([0-9.]+) seconds. CPU \(([0-9.]+)%\) ([\w\d\s:]*)$')
+
+
+def get_command_for_execute_with_shell(cmd, run_shell=False):
+    return ['powershell', cmd] if run_shell else [cmd]
 
 
 class ChieThread(Thread):
@@ -118,6 +126,12 @@ class ChieThread(Thread):
         self.phase = 'init'
         self.last_time = 'unknown'
         self.config = config_for_thread
+        self.plot_created = 0
+        self.total_time = 0
+        self.ave_time = 0
+        self.start_shell = self.config.get('start_shell', True)
+        self.end_phase_info = ''
+        self.start_phase_info = ''
 
     def __del__(self):
         if self.log:
@@ -164,18 +178,29 @@ class ChieThread(Thread):
                 pass
 
         self.write_log(f'START WORK from {self.current} to {self.last}')
+        if not str(self.current).isdecimal() or not str(self.last).isdecimal():
+            self.write_log(f'ERROR IN RANGE PARAMS from {self.current} to {self.last}', need_stdout=True)
+            return
         for ind in range(self.current, self.last):
             try:
                 start_time = datetime.now()
                 if not self.need_stop:
-                    self.process = subprocess.Popen(['powershell', self.cmd], stderr=subprocess.PIPE,
-                                                    stdout=subprocess.PIPE, shell=True, encoding='cp866',
+                    self.process = subprocess.Popen(get_command_for_execute_with_shell(self.cmd, self.start_shell),
+                                                    stderr=subprocess.PIPE,
+                                                    stdout=subprocess.PIPE,
+                                                    shell=True, encoding='cp866',
                                                     universal_newlines=True)
                 while not self.need_stop and self.process.poll() is None:
                     text = self.process.stdout.readline()
                     result = matching.search(text)
                     if result:
                         self.phase = result.group(1)
+                        self.start_phase_info = f'{result.group(2)} [{result.group(3)}]'
+                    else:
+                        result = matching_time.search(text)
+                        if result:
+                            self.end_phase_info = f'Фаза {result.group(1)} - завершина CPU {result.group(2)}% [{result.group(3)}]'
+
                     self.write_log(text, False, need_flush=True)
                 if self.need_stop and self.process.poll() is None:
                     self.kill()
@@ -185,6 +210,10 @@ class ChieThread(Thread):
                     self.current = ind + 1
                     self.write_last()
                     self.write_log(f'plot {self.current:3d} created at {elapsed_time}\n')
+                    self.last_time = elapsed_time
+                    self.plot_created += 1
+                    self.total_time += elapsed_time.total_seconds()
+                    self.ave_time = math.ceil(self.total_time / self.plot_created)
                 elif not self.need_stop:
                     error_text = self.process.stderr.read()
                     self.write_log(f'ERROR {self.current:3d}: {error_text}\n')
@@ -202,7 +231,8 @@ class ChieThread(Thread):
                 chia_cmd_path = self.config.get('chia_path')
                 if chia_cmd_path:
                     work_dir = self.config['work_dir']
-                    subprocess.Popen(['powershell', f'{chia_cmd_path} --final_dir "{work_dir}"'])
+                    subprocess.Popen(get_command_for_execute_with_shell(f'{chia_cmd_path} --final_dir "{work_dir}"',
+                                                                        self.start_shell))
 
         self.process = None
         self.need_stop = True
@@ -327,6 +357,11 @@ class MainThread(Thread):
         os.kill(os.getpid(), signal.CTRL_C_EVENT)
 
 
+def get_html_dict(dict_to_html, title=''):
+    dict_info = '\n'.join([f'<tr><td>{k}</td><td>{v}</td></tr>' for k, v in dict_to_html.items()])
+    return f'<div><h3>{title}</h3><table>{dict_info}</table></div>'
+
+
 GIGABYTE = 1024 * 1024 * 1024
 if __name__ == '__main__':
     processor = MainThread()
@@ -334,7 +369,42 @@ if __name__ == '__main__':
 
 
     @app.route('/')
-    def hello_world():
+    def index():
+        load_avg = psutil.getloadavg()
+        cpu_percent = psutil.cpu_percent()
+        memory = psutil.virtual_memory()  # self.ave_time
+        disk_info_data = [(p.mountpoint, psutil.disk_usage(p.mountpoint))
+                          for p in psutil.disk_partitions() if p.fstype and p.opts.find('fixed') >= 0]
+        disk_info = '\n'.join([f'<li>ДИСК {di[0]} СВОБОДНО {(di[1].free / GIGABYTE):.2f}Гб '
+                               f'из {(di[1].total / GIGABYTE):.2f}Гб  {di[1].percent}%</li>'
+                               for di in disk_info_data])
+        context = '\n'.join(
+            [f'<li>{index:2d}.ПОТОК {thread.name} ВЫПОЛЯЕТ {thread.current} из {thread.last} <BR>\
+                ТЕКУЩАЯ ФАЗА {thread.phase} {thread.start_phase_info}<BR>\
+                ЗАВЕРШЕННАЯ ФАЗА: {thread.end_phase_info} <BR>\
+                ВРЕМЯ ПОСЛЕДНЕГО ПЛОТА {thread.last_time}<BR>\
+                СРЕДНЕЕ ВРЕМЯ ПЛОТА {thread.ave_time}<BR>\
+                <a href="/view_log/{thread.name}">VIEW LOG</a> \
+                </li>' for index, thread in
+             enumerate(processor.threads)])
+        return f'<HTML><HEAD></HEAD> \
+                 <BODY> \
+                 <a href="/control">ОБНОВИТЬ</a> \
+                 <div><h3>СИСТЕМА</h3>ЗАГРУЗКА CPU {cpu_percent}% \
+                 последние 1 мин {load_avg[0]}% 5 мин {load_avg[1]}% 15 мин {load_avg[2]}% \
+                 </div> \
+                 <div>\
+                 Использование памяти доступно {(memory.available / GIGABYTE):6.2f}Gb \
+                 из {(memory.total / GIGABYTE):6.2f}Gb\
+                 <h6>Дисковая подсистема</h6><ul>{disk_info}</ul>\
+                 </div>\
+                 <a href="/">ОБНОВИТЬ</a> <h5>ПРОЦЕССЫ</h5>\
+                 <UL>{context}</UL><div>\
+                 <a href="/control">ОБНОВИТЬ</a><a href="/control">УПРАВЛЕНИЕ</a></div></BODY></HTML>'
+
+
+    @app.route('/control')
+    def control():
         load_avg = psutil.getloadavg()
         cpu_percent = psutil.cpu_percent()
         memory = psutil.virtual_memory()
@@ -348,6 +418,7 @@ if __name__ == '__main__':
              enumerate(processor.threads)])
         return f'<HTML><HEAD></HEAD> \
                  <BODY> \
+                 <a href="/control">ОБНОВИТЬ</a> \
                  <div>ЗАГРУЗКА CPU {cpu_percent}% \
                  последние 1 мин {load_avg[0]}% 5 мин {load_avg[1]}% 15 мин {load_avg[2]}% \
                  </div> \
@@ -355,9 +426,17 @@ if __name__ == '__main__':
                  Использование памяти доступно {(memory.available / GIGABYTE):6.2f}Gb \
                  из {(memory.total / GIGABYTE):6.2f}Gb\
                  </div>\
-                 <a href="/">ОБНОВИТЬ</a> \
-                 <a href="restart_workers">RESTART</a> \
-                 <UL>{context}</UL><div><a href="/stop_all">SHUTDOWN</a></div></BODY></HTML>'
+                 <a href="/control">ОБНОВИТЬ</a> \
+                 <a href="/">ГЛАВНАЯ</a> \
+                 <UL>{context}</UL>\
+                 <div> \
+                 <h5>Управление</h5><ul>\
+                 <li><a href="/show_config">КОНФИГ</a></li> \
+                 <li><a href="/stop_iteration_all">ОСТАНОВИТЬ ИТЕРАЦИИ</a></li> \
+                 <li><a href = "/restart_workers">ПЕРЕЗАПУСТИТЬ ЕСЛИ ВСЕ ПОТОКИ ОСТАНОВЛЕНЫ</a></li> \
+                 <li><a href = "/kill_threads">УБИТТЬ ВСЕ ПОТОКИ</a></li> \
+                 <li><a href="/stop_all">SHUTDOWN (ЗАВЕРШИТЬ ПРОГРАММУ)</a></li>\
+                 </ul></div></BODY></HTML>'
 
 
     @app.route('/log<name>')
@@ -371,6 +450,14 @@ if __name__ == '__main__':
             abort(404)
 
 
+    @app.route('/show_config')
+    def show_config():
+        global_text = get_html_dict(processor.main_config, 'Глобальная конфигурация')
+        per_plot = ''.join([get_html_dict(thread.config, thread.name) for thread in processor.threads])
+        context = f'<h1>КОНФИГУРАЦИЯ СИСТЕМЫ</h1>{global_text}<h2>Конфигурации потоков</h2>{per_plot}'
+        return f'<HTML><HEAD></HEAD><BODY>{context}<a href="/control">BACK</a><a href="/">HOME</a></BODY></HTML>'
+
+
     @app.route('/stop<index>')
     def stop(index):
         if not index.isdecimal():
@@ -378,7 +465,20 @@ if __name__ == '__main__':
         index = int(index)
         if 0 <= index < len(processor.threads):
             processor.threads[index].kill()
-            context = f'THREAD STOPPED!<BR><a href="/">BACK</a>'
+            context = f'THREAD STOPPED!<BR><<a href="/control">BACK</a><a href="/">HOME</a>'
+            return f'<HTML><HEAD></HEAD><BODY><UL>{context}</UL></BODY></HTML>'
+        else:
+            abort(404)
+
+
+    @app.route('/stop_iteration/<index_element>')
+    def stop_iteration(index_element):
+        if not index_element.isdecimal():
+            abort(404)
+        index_element = int(index_element)
+        if 0 <= index_element < len(processor.threads):
+            processor.threads[index_element].need_stop = True
+            context = f'THREAD SET STOP ITERATION!<BR><a href="/control">BACK</a><a href="/">HOME</a>'
             return f'<HTML><HEAD></HEAD><BODY><UL>{context}</UL></BODY></HTML>'
         else:
             abort(404)
@@ -417,20 +517,40 @@ if __name__ == '__main__':
         return f'<HTML><HEAD></HEAD><BODY><UL>{context}</UL></BODY></HTML>'
 
 
+    @app.route('/kill_threads')
+    def kill_threads():
+        for thread in processor.threads:
+            thread.kill()
+        context = f'КОМАНДА НЕМЕДЛЕННОЙ ОСТАНОВКИ ВСЕХ ПОТОКОВ!<BR><a href="/control">BACK</a><a href="/">HOME</a>'
+        return f'<HTML><HEAD></HEAD><BODY><UL>{context}</UL></BODY></HTML>'
+
+
+    @app.route('/stop_iteration_all')
+    def stop_iteration_all():
+        for thread in processor.threads:
+            thread.need_stop = True
+        context = f'КОМАНДА ОСТАНОВКИ ИТЕРАЦИЙ ВСЕХ ПОТОКОВ!<BR><a href="/control">BACK</a><a href="/">HOME</a>'
+        return f'<HTML><HEAD></HEAD><BODY><UL>{context}</UL></BODY></HTML>'
+
+
     @app.route('/restart_workers')
     def restart_all():
         processor.restart_command = True
-        context = f'TRY RESTART!<BR><a href="/">BACK</a>'
+        context = f'TRY RESTART!<BR><a href="/control">BACK</a><a href="/">HOME</a>'
         return f'<HTML><HEAD></HEAD><BODY><UL>{context}</UL></BODY></HTML>'
+
 
     node_start = processor.main_config.get('start_node', None)
     if node_start:
         path = processor.main_config['chia_path']
+        run_in_shell = processor.main_config.get('start_shell', True)
         if path:
             peer_config = processor.main_config.get('set_peer_address', None)
-            shel = subprocess.Popen(['powershell', f'{path} configure --set-farmer-peer {node_start} -upnp false'])
+            shel = subprocess.Popen(
+                get_command_for_execute_with_shell(f'{path} configure --set-farmer-peer {node_start} -upnp false',
+                                                   run_in_shell))
             shel.wait(10)
-            subprocess.Popen(['powershell', f'{path} start {peer_config}'])
+            subprocess.Popen(get_command_for_execute_with_shell(f'{path} start {peer_config}', run_in_shell))
 
     processor.start()
     while processor.web_server_running:
