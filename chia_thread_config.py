@@ -32,7 +32,7 @@ def get_threads_configs():
         default_config = read_params_from_section(config, 'default', default_config)
     chia_path = default_config.get('chia_path', None)
 
-    if chia_path is None or (chia_path.find('python.exe')==-1 and not Path(default_config['chia_path']).exists()):
+    if chia_path is None or (chia_path.find('python.exe') == -1 and not Path(default_config['chia_path']).exists()):
         if check_bool(default_config.get('auto_find_exe', True)):
             path_chia_exe = find_chia()
         else:
@@ -52,12 +52,7 @@ def get_threads_configs():
 
 # matching = re.compile(r'Starting phase ([0-9]*/[0-9]*):\s*([A-Z][\w\d\s:\\\-".]+)\.\.\.\s+([A-Z][\w\d\s:]+)$')
 
-    # r'Starting phase ([0-9]*\/[0-9]*):\s*(.*)\s+([A-Z][a-z]{2,4}\s+[A-Z][a-z]{2,10}\s+\d{1,2}\s+\d{1,2}:\d{1,2}:\d{1,2}\s+\d{2,4}.*)$')
-
-
-
-
-
+# r'Starting phase ([0-9]*\/[0-9]*):\s*(.*)\s+([A-Z][a-z]{2,4}\s+[A-Z][a-z]{2,10}\s+\d{1,2}\s+\d{1,2}:\d{1,2}:\d{1,2}\s+\d{2,4}.*)$')
 
 
 class ChieThreadConfig:

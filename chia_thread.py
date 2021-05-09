@@ -99,7 +99,9 @@ class ChieThread(Thread):
             try:
                 start_time = datetime.now()
                 if not self.need_stop:
-                    self.process = subprocess.Popen(get_command_for_execute_with_shell(self.cmd, self.config),
+                    cmd = get_command_for_execute_with_shell(self.cmd, self.config)
+                    print(cmd)
+                    self.process = subprocess.Popen(cmd,
                                                     stderr=subprocess.PIPE,
                                                     stdout=subprocess.PIPE,
                                                     shell=self.start_shell, encoding=self.code_page,
@@ -111,7 +113,7 @@ class ChieThread(Thread):
                         self.phase = result.group(1)
                         result = ex_data.search(text, result.end())
                         if result:
-                            self.start_phase_info = f'{result.group(2)} [{result.group(3)}]'
+                            self.start_phase_info = f'{result.group(1)} [{result.group(2)}]'
                     else:
                         result = matching_time.search(text)
                         if result:
@@ -185,10 +187,11 @@ class ChieThread(Thread):
         self.process = None
         self.need_stop = True
         self.phase = f'ПРОЦЕСС ЗАВЕРШЕН! {datetime.now()}'
+        os.remove(self.file)
         for name, stat in self.phase_stat.items():
             self.write_log(name)
             for k, v in stat.items():
-                self.write_log(f'{k}:{v:10.f}')
+                self.write_log(f'{k}:{v:10.0f}')
         self.log.close()
         self.log = None
 
