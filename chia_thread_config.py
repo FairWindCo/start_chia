@@ -1,10 +1,22 @@
 import configparser
+import hashlib
 import os
 import sys
 from pathlib import Path
 
 from chia_thread import ChieThread
 from utils import read_params_from_section, check_bool, find_chia, get_command_args
+
+salt = os.urandom(32)  # Remember this
+
+
+def get_hash(password):
+    return hashlib.pbkdf2_hmac(
+        'sha256',  # The hash digest algorithm for HMAC
+        password.encode('utf-8'),  # Convert the password to bytes
+        salt,  # Provide the salt
+        100000  # It is recommended to use at least 100,000 iterations of SHA-256
+    )
 
 
 def get_threads_configs():
@@ -45,6 +57,8 @@ def get_threads_configs():
         else:
             print('ERROR: NO CHIA.EXE FILE FOUND!')
             sys.exit(1)
+    password = get_hash(default_config.get('password', 'Qwerty12345'))
+    default_config['password'] = password
     config_thread = [read_params_from_section(config, section, default_config) for section in config.sections()
                      if section != 'default']
     return config_thread, default_config
