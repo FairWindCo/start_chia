@@ -6,39 +6,27 @@
     <div class="col-12 card">
         <div class="card-title text-center row">
             <h5 class="text-center col-8">Состояние системы</h5>
-            <a class="col-4 btn button btn-dark" href="/">Обновить</a>
+            <a class="col-4 btn button btn-dark" href="/stat">Обновить</a>
         </div>
     </div>
     {% for th in threads %}
-    {% endfor %}
-    <div class="col card m-1">
+    <div class="card m-1">
         <div class="card-title align-center align-content-center"><h6 class="">{{th.name}}</h6></div>
         <div class="card-body">
-            <div class="row">
-                <div class="col-4">ВЫПОЛНЕНО</div>
-                <div class="col-8">{{th.current}} / {{th.last}}</div>
-            </div>
-            <div class="row">
-                <div class="col-4">ТЕКУЩАЯ ФАЗА</div>
-                <div class="col-8">{{th.phase}}</div>
-            </div>
-            <div class="row">
-                <div class="col-4">ЗАВЕРШЕННАЯ ФАЗА</div>
-                <div class="col-8">{{th.end_phase_info}}</div>
-            </div>
-            <div class="row">
-                <div class="col-4">ВРЕМЯ ПОСЛЕДНЕГО ПЛОТА</div>
-                <div class="col-8">{{th.last_time}}</div>
-            </div>
-            <div class="row">
-                <div class="col-4">СРЕДНЕЕ ВРЕМЯ ПЛОТА</div>
-                <div class="col-8">{{th.ave_time}}</div>
-            </div>
-            <div class="row">
-                <div class="col">{{th.start_phase_info}}</div>
-            </div>
-            <div class="row">
-                <a class="btn btn-info col-4" href="/view_log/{{th.name}}">ЖУРНАЛ</a>
+            <div class="row flex-wrap">
+                {% for key,val in th.phase_stat.items() %}
+                <div class="col-6 card">
+                    <div class="card-title">{{key}}</div>
+                    <div class="card-body">
+                    {% for k,v in val.items() %}
+                    <div class="row">
+                    <div class="col-6">{{k}}</div>
+                    <div class="col-6">{{v}}</div>
+                        </div>
+                    {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
             </div>
         </div>
     </div>

@@ -5,6 +5,7 @@ from threading import Thread, Event
 import psutil
 
 from InfoThread import InfoThread
+from TelegramThread import TelegramThread
 from chia_thread_config import get_threads_configs, ChieThreadConfig
 from utils import check_bool, GIGABYTE, get_command_for_execute_with_shell, get_html_dict
 from web_template import get_base_html_template, get_back_control_template, get_back_template
@@ -21,6 +22,7 @@ class MainThread(Thread):
         self.restart_command = False
         self.event = Event()
         self.info = None
+        self.telegram = None
 
     def need_start(self):
         if not self.threads:
@@ -59,8 +61,10 @@ class MainThread(Thread):
                     get_command_for_execute_with_shell(f'{path} start {peer_config}', self.main_config),
                     shell=shelling)
         self.info = InfoThread(self)
+        self.telegram = TelegramThread(self)
 
         self.info.start()
+        self.telegram.start()
         while self.web_server_running:
             if self.need_start() and self.web_server_running:
                 self.init_thread()
@@ -74,6 +78,7 @@ class MainThread(Thread):
                     self.kill_all()
                     break
         self.info.shutdown()
+        self.telegram.shutdown()
 
     def kill_all(self):
         self.main_config['auto_restart'] = False
@@ -83,6 +88,8 @@ class MainThread(Thread):
         self.web_server_running = False
         # os.kill(self.native_id, signal.CTRL_C_EVENT)
         self.event.set()
+        self.info.shutdown()
+        self.telegram.shutdown()
 
     def get_main_info(self):
         disk_info_data = [(p.mountpoint, psutil.disk_usage(p.mountpoint))
@@ -160,13 +167,13 @@ class MainThread(Thread):
         now = datetime.now().strftime('%m/%d/%Y, %H:%M:%S')
         disk_info_data = [(p.mountpoint, psutil.disk_usage(p.mountpoint))
                           for p in psutil.disk_partitions() if p.fstype and p.opts.find('fixed') >= 0]
-        disk_info = '\n'.join([f'<li>ДИСК {di[0]} СВОБОДНО {(di[1].free / GIGABYTE):.2f}Гб '
-                               f'из {(di[1].total / GIGABYTE):.2f}Гб  {di[1].percent}%</li>'
+        disk_info = '\n'.join([f'ДИСК {di[0]} СВОБОДНО {(di[1].free / GIGABYTE):.2f}Гб '
+                               f'из {(di[1].total / GIGABYTE):.2f}Гб  {di[1].percent}%'
                                for di in disk_info_data])
         context = '\n'.join(
-            [f'<li>{i:2d}.ПОТОК {thread.name} ВЫПОЛНЕНО {thread.current} из {thread.last} <BR>\
-                ТЕКУЩАЯ ФАЗА {thread.phase} ВРЕМЯ СОЗДАНИЯ {thread.last_time}<BR>\
-                </li>' for i, thread in
+            [f'{i:2d}.ПОТОК {thread.name} ВЫПОЛНЕНО {thread.current} из {thread.last} \
+                ТЕКУЩАЯ ФАЗА {thread.phase} ВРЕМЯ СОЗДАНИЯ {thread.last_time}'
+                for i, thread in
              enumerate(self.threads)])
         message = f'{now}\nИнформция о дисках\n{disk_info}\n{context}'
         return message

@@ -1,9 +1,7 @@
-import asyncio
 import re
 import subprocess
 from threading import Thread, Event
 
-from telegram_message import run_send_message_to_clients
 from utils import get_command_for_execute_with_shell
 
 wallet_height_reg = re.compile(r'Wallet height:\s*(\d*).*')
@@ -31,8 +29,6 @@ class InfoThread(Thread):
         sleep_time = self.main_processor.main_config.get('info_update_time', 600)
         chia_exe = self.main_processor.main_config.get('chia_exe')
         # Remember to use your own values from my.telegram.org!
-        event_loop_a = asyncio.new_event_loop()
-        asyncio.set_event_loop(event_loop_a)
 
         while self.worked:
             for line in self.run_command_and_get_output(f'{chia_exe} wallet show'):
@@ -61,11 +57,6 @@ class InfoThread(Thread):
                     self.wallet_info['error'] = line
                 elif res := farm_sync_reg.search(line):
                     self.wallet_info[res.group(1)] = res.group(2)
-            if api_id and api_hash and send_to:
-                try:
-                    run_send_message_to_clients(send_to, self.main_processor.get_telegram_message(), api_id, api_hash)
-                except Exception as e:
-                    print(e)
             self.event.wait(sleep_time)
 
     def shutdown(self):

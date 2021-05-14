@@ -88,9 +88,14 @@ async def show_config(request):
     return html(app.ctx.processor.show_config())
 
 
+@app.route('/stat2')
+async def show_stat2(request):
+    return html(app.ctx.processor.show_stat())
+
+
 @app.route('/stat')
 async def show_stat(request):
-    return html(app.ctx.processor.show_stat())
+    return jinja.render('statistics.html', request, threads=app.ctx.processor.threads)
 
 
 @app.route('/stop_iteration_all')
@@ -154,9 +159,14 @@ async def logout(request):
     return response.redirect('/login')
 
 
+@app.route('/wallet2')
+async def get_wallet2(request):
+    return html(processor.show_wallet())
+
+
 @app.route('/wallet')
 async def get_wallet(request):
-    return html(processor.show_wallet())
+    return jinja.render('wallet.html', request, wallet=app.ctx.processor.info.wallet_info)
 
 
 @app.route('/test')
