@@ -100,7 +100,6 @@ class ChieThread(Thread):
                 start_time = datetime.now()
                 if not self.need_stop:
                     cmd = get_command_for_execute_with_shell(self.cmd, self.config)
-                    print(cmd)
                     self.process = subprocess.Popen(cmd,
                                                     stderr=subprocess.PIPE,
                                                     stdout=subprocess.PIPE,
@@ -132,6 +131,8 @@ class ChieThread(Thread):
                             statistics['Последнее значение'] = seconds
                             if seconds > statistics['Максимальное значение значение']:
                                 statistics['Максимальное значение значение'] = seconds
+                            if statistics['Минимальное значение значение'] == 0:
+                                statistics['Минимальное значение значение'] = seconds
                             if seconds < statistics['Минимальное значение значение']:
                                 statistics['Минимальное значение значение'] = seconds
                             statistics['Сумарное'] = statistics['Сумарное'] + seconds
@@ -187,7 +188,10 @@ class ChieThread(Thread):
         self.process = None
         self.need_stop = True
         self.phase = f'ПРОЦЕСС ЗАВЕРШЕН! {datetime.now()}'
-        os.remove(self.file)
+        try:
+            os.remove(self.file)
+        except FileNotFoundError:
+            print(f'{self.file} not found')
         for name, stat in self.phase_stat.items():
             self.write_log(name)
             for k, v in stat.items():

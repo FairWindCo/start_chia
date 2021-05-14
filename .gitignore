@@ -3,3 +3,4 @@ venv/
 *.log
 .git/
 pool*
+*.session

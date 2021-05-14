@@ -1,0 +1,53 @@
+{% extends "menu.html" %}
+{% block content_int %}
+
+
+<div class="row flex-wrap mt-5">
+    <div class="col-12 card">
+        <div class="card-title text-center row">
+            <h5 class="text-center col-8">Состояние системы</h5>
+            <a class="col-4 btn button btn-dark" href="/control">Обновить</a>
+        </div>
+        <div class="row text-center">
+            <div class="col">
+                Загрузка процессора
+            </div>
+            <div class="col">
+                {{ cpu_percent }}%
+            </div>
+            <div class="col">
+                Потребление памяти
+            </div>
+            <div class="col">
+                {{ memory[0]|round(2)  }}Гб/{{ memory[1]|round(2) }}Гб
+            </div>
+        </div>
+    </div>
+    {% for th in threads %}
+    <div class="col card m-1">
+        <div class="card-title align-center align-content-center"><h6 class="">{{th.name}}</h6></div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-4">ВЫПОЛНЕНО</div>
+                <div class="col-8">{{th.current}} / {{th.last}}</div>
+            </div>
+            <div class="row">
+                <div class="col-4">ТЕКУЩАЯ ФАЗА</div>
+                <div class="col-8">{{th.phase}}</div>
+            </div>
+            <div class="row">
+                <div class="col-4">ВРЕМЯ ПОСЛЕДНЕГО ПЛОТА</div>
+                <div class="col-8">{{th.last_time}}</div>
+            </div>
+            <div class="row">
+                <a class="btn btn-info col-3" href="/view_log/{{th.name}}">ЖУРНАЛ</a>
+                <a class="btn btn-info col-3" href="/log/{{loop.index0}}">СКАЧАТЬ ЖУРНАЛ</a>
+                <a class="btn btn-info col-3" href="/stop/{{loop.index0}}">ОСТАНОВИТЬ</a>
+                <a class="btn btn-info col-3" href="/stop_iteration/{{loop.index0}}">СТОП ИТЕРАЦИИ</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

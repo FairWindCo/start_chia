@@ -43,8 +43,9 @@ def get_threads_configs():
     if 'default' in config.sections():
         default_config = read_params_from_section(config, 'default', default_config)
     chia_path = default_config.get('chia_path', None)
-
-    if chia_path is None or (chia_path.find('python.exe') == -1 and not Path(default_config['chia_path']).exists()):
+    default_config['chia_exe'] = chia_path
+    is_imitator = chia_path.find('python.exe') >= 0
+    if chia_path is None or (not is_imitator and not Path(default_config['chia_path']).exists()):
         if check_bool(default_config.get('auto_find_exe', True)):
             path_chia_exe = find_chia()
         else:
@@ -54,9 +55,12 @@ def get_threads_configs():
             default_config['chia_path'] = path_chia_exe
             print('WARNING: NO "chia_path" IN CONFIG FILE OR PATH INCORRECT!')
             print(f'USE PATH: {path_chia_exe}')
+            default_config['chia_exe'] = path_chia_exe
         else:
             print('ERROR: NO CHIA.EXE FILE FOUND!')
             sys.exit(1)
+    elif is_imitator:
+        default_config['chia_exe'] = find_chia()
     password = get_hash(default_config.get('password', 'Qwerty12345'))
     default_config['password'] = password
     config_thread = [read_params_from_section(config, section, default_config) for section in config.sections()

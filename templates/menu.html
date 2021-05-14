@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">NKT Chia Plot Combiner</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" href="/">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" href="/wallet">Кошелек</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" href="/stat">Статистика</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                       data-bs-toggle="dropdown" aria-expanded="false">
+                        УПРАВЛЕНИЕ
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <li><a class="dropdown-item" href="/control">Управление</a></li>
+                        <li><a class="dropdown-item" href="/show_config">Конфигурация</a></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li><a class="dropdown-item" href="/restart_workers">ПЕРЕЗАПУСТИТЬ ЕСЛИ ВСЕ ПОТОКИ
+                            ОСТАНОВЛЕНЫ</a></li>
+                        <li><a class="dropdown-item" href="/kill_threads">УБИТТЬ ВСЕ ПОТОКИ</a></li>
+                        <li><a class="dropdown-item" href="/stop_iteration_all">ОСТАНОВИТЬ ИТЕРАЦИИ</a></li>
+                        <li><a class="dropdown-item" href="/stop_all">ЗАВЕРШИТЬ ПРОГРАММУ</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    {% block content_int %}
+    <div class="mt-5 card alert-danger">
+        {{ context }}
+    </div>
+    {% endblock %}
+</div>
+
+<div class="toast-container">
+    {% for cat, msg in get_flashed_messages(with_categories=true) %}
+    <div class="toast align-items-center text-white bg-primary border-0" role="alert" aria-live="assertive"
+         aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto">{{ cat }}</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                {{ msg }}
+            </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,36 +1,39 @@
 import os
+import sys
 from pathlib import Path
 
+import jinja2
 from sanic import Sanic, html, response
 from sanic.exceptions import abort
 from sanic.response import stream
 from sanic_auth import Auth, User
+from sanic_jinja2 import SanicJinja2
+from sanic_session import Session
 
 from chia_thread_config import get_hash
 from main_thread import MainThread
 
-app = Sanic("Web Server")
-auth = Auth(app)
 
-# NOTE
-# For demonstration purpose, we use a mock-up globally-shared session object.
-session = {}
+def get_current_path(*relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.getcwd()
+    return os.path.join(base_path, *relative_path)
+
+
+app = Sanic(name="Web Server")
+auth = Auth(app)
+session = Session(app)
+jinja = SanicJinja2(app, session=session, loader=jinja2.FileSystemLoader(get_current_path('templates')))
+
 
 def handle_no_auth(request):
     return response.redirect('/login')
 
-@app.middleware('request')
-async def add_session(request):
-    request.ctx.session = session
-
 
 def shutdown_server():
     app.stop()
-
-
-@app.route('/')
-async def index(request):
-    return html(app.ctx.processor.index())
 
 
 @app.route('/get_self_program')
@@ -65,26 +68,22 @@ async def view_log(request, name):
         abort(404)
 
 
-@app.route('/control')
-@auth.login_required(user_keyword='user', handle_no_auth=handle_no_auth)
-async def control(request):
-    return html(app.ctx.processor.control())
-
-
 @app.route('/stop_all')
-@auth.login_required(user_keyword='user', handle_no_auth=handle_no_auth)
+@auth.login_required(handle_no_auth=handle_no_auth)
 async def stop_all(request):
-    return html(app.ctx.processor.stop_all())
+    context = app.ctx.processor.stop_all()
+    app.add_task(lambda _: app.stop())
+    return html(context)
 
 
 @app.route('/kill_threads')
-@auth.login_required(user_keyword='user', handle_no_auth=handle_no_auth)
+@auth.login_required(handle_no_auth=handle_no_auth)
 async def kill_threads(request):
     return html(app.ctx.processor.kill_threads())
 
 
 @app.route('/show_config')
-@auth.login_required(user_keyword='user', handle_no_auth=handle_no_auth)
+@auth.login_required(handle_no_auth=handle_no_auth)
 async def show_config(request):
     return html(app.ctx.processor.show_config())
 
@@ -95,19 +94,19 @@ async def show_stat(request):
 
 
 @app.route('/stop_iteration_all')
-@auth.login_required(user_keyword='user', handle_no_auth=handle_no_auth)
+@auth.login_required(handle_no_auth=handle_no_auth)
 async def stop_iteration_all(request):
     return html(app.ctx.processor.stop_iteration_all())
 
 
 @app.route('/restart_workers')
-@auth.login_required(user_keyword='user', handle_no_auth=handle_no_auth)
+@auth.login_required(handle_no_auth=handle_no_auth)
 async def restart_all(request):
     return html(app.ctx.processor.restart_all())
 
 
 @app.route('/stop_iteration/<index_element:int>')
-@auth.login_required(user_keyword='user', handle_no_auth=handle_no_auth)
+@auth.login_required(handle_no_auth=handle_no_auth)
 def stop_iteration(request, index_element):
     res = app.ctx.processor.stop_iteration(index_element)
     if res:
@@ -115,24 +114,16 @@ def stop_iteration(request, index_element):
 
 
 @app.route('/stop/<stop_index:int>')
-@auth.login_required(user_keyword='user', handle_no_auth=handle_no_auth)
-async def stop(requrst, stop_index):
+@auth.login_required(handle_no_auth=handle_no_auth)
+async def stop(request, stop_index):
     res = app.ctx.processor.stop(stop_index)
+    jinja.flash(request, 'SEND STOP REQUEST')
     if res:
-        return html(res)
+        context = 'SEND STOP REQUEST'
 
-
-LOGIN_FORM = '''
-<h2>Please sign in, you can try:</h2>
-<p>{}</p>
-<form action="" method="POST">
-  <input class="username" id="name" name="username"
-    placeholder="username" type="text" value=""><br>
-  <input class="password" id="password" name="password"
-    placeholder="password" type="password" value=""><br>
-  <input id="submit" name="submit" type="submit" value="Sign In">
-</form>
-'''
+    else:
+        context = 'NO PROCESSOR'
+    return jinja.render('menu.html', request, context=context)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -148,9 +139,12 @@ async def login(request):
             # auth.login_user expects User.id and User.name available
             user = User(id=1, name=username)
             auth.login_user(request, user)
+            jinja.flash(request, f'User login {username}')
             return response.redirect('/')
-        message = 'invalid username or password'
-    return response.html(LOGIN_FORM.format(message))
+        if username or password:
+            jinja.flash(request, 'invalid username or password')
+            message = 'invalid username or password'
+    return jinja.render('login.html', request, message=message)
 
 
 @app.route('/logout')
@@ -160,8 +154,38 @@ async def logout(request):
     return response.redirect('/login')
 
 
+@app.route('/wallet')
+async def get_wallet(request):
+    return html(processor.show_wallet())
+
+
+@app.route('/test')
+async def get_log(request):
+    current_path = get_current_path('templates', 'test.html')
+    return jinja.render('test.html', request, greetings="Hello, sanic!")
+
+
+@app.route('/control')
+@auth.login_required(handle_no_auth=handle_no_auth)
+async def get_control(request):
+    return jinja.render('control.html', request, **app.ctx.processor.get_main_info())
+
+
+@app.route('/')
+async def get_log(request):
+    return jinja.render('main.html', request, **app.ctx.processor.get_main_info())
+
+
 if __name__ == '__main__':
     processor = MainThread()
     app.ctx.processor = processor
+    app.ctx.jinja = jinja
     processor.start()
-    app.run('0.0.0.0', 5050)
+    try:
+        app.static('/assert', get_current_path('assert'))
+        try:
+            app.run('0.0.0.0', 5050)
+        except Exception:
+            processor.kill_all()
+    except OSError:
+        processor.kill_all()
