@@ -8,7 +8,7 @@
             <h5 class="text-center col-8">Состояние системы</h5>
             <a class="col-4 btn button btn-dark" href="/">Обновить</a>
         </div>
-        <div class="row text-center">
+        <div class="row text-center  flex-wrap">
             <div class="col">
                 Загрузка процессора
             </div>
@@ -36,7 +36,7 @@
                 {{ load_avg[2] }}% за 15 мин
             </div>
         </div>
-        <div class="row flex-wrap mt-5">
+        <div class="flex-row flex-wrap mt-5">
             {% for di in disk_info %}
             <div class="col card">
                 <div class="card-title">
@@ -52,6 +52,7 @@
             {% endfor %}
         </div>
     </div>
+    <div class="flex-row flex-wrap mt-5">
     {% for th in threads %}
     <div class="col card m-1">
         <div class="card-title align-center align-content-center"><h6 class="">{{th.name}}</h6></div>
@@ -85,6 +86,7 @@
         </div>
     </div>
     {% endfor %}
+    </div>
 </div>
 
 {% endblock %}

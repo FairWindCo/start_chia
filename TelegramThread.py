@@ -16,7 +16,7 @@ class TelegramThread(Thread):
         api_hash = self.main_processor.main_config.get('api_hash')
         send_to = self.main_processor.main_config.get('send_to', '').split(',')
 
-        sleep_time = self.main_processor.main_config.get('telegram_time', 600)
+        sleep_time = int(self.main_processor.main_config.get('telegram_time', 600))
         event_loop_a = asyncio.new_event_loop()
         asyncio.set_event_loop(event_loop_a)
 
