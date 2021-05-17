@@ -113,18 +113,6 @@ class MainThread(Thread):
                   <h2>Конфигурации потоков</h2>{per_plot}<h2>Строки запуска</h2><ul>{cmds}</ul>'
         return get_back_control_template(context)
 
-    def show_stat(self):
-        def converter(info):
-            phase_name, phase_info = info
-            return get_html_dict(phase_info, phase_name)
-
-        threads_info = '\n'.join([f'<div><h3>{thread.name}</h3><h4>{thread.cmd}</h4>\
-                        {"".join(map(converter, thread.phase_stat.items()))}</div>'
-                                  for thread in self.threads])
-
-        context = f'<h1>Стататистика по фазам</h1>{threads_info}'
-        return get_back_template(context)
-
     def stop(self, stop_index: int):
         if 0 <= stop_index < len(self.threads):
             self.threads[stop_index].kill()
@@ -135,33 +123,30 @@ class MainThread(Thread):
     def stop_iteration(self, index_element: int):
         if 0 <= index_element < len(self.threads):
             self.threads[index_element].need_stop_iteration = True
-            return get_back_control_template('THREAD SET STOP ITERATION!')
+            return 'THREAD SET STOP ITERATION!'
         else:
             return None
 
     def stop_all(self):
         self.main_config['auto_restart'] = False
         self.kill_all()
-        return get_base_html_template('КОМАНДА ОСТАНОВКИ ПРОГРАММЫ (завершение в течении 1 минуту)')
+        return 'КОМАНДА ОСТАНОВКИ ПРОГРАММЫ (завершение в течении 1 минуту)'
 
     def kill_threads(self):
         for thread in self.threads:
             thread.kill()
-        return get_back_control_template('КОМАНДА НЕМЕДЛЕННОЙ ОСТАНОВКИ ВСЕХ ПОТОКОВ!')
+        return 'КОМАНДА НЕМЕДЛЕННОЙ ОСТАНОВКИ ВСЕХ ПОТОКОВ!'
 
     def stop_iteration_all(self):
         for thread in self.threads:
             thread.need_stop_iteration = True
-        return get_back_control_template('КОМАНДА ОСТАНОВКИ ИТЕРАЦИЙ ВСЕХ ПОТОКОВ!')
+        return 'КОМАНДА ОСТАНОВКИ ИТЕРАЦИЙ ВСЕХ ПОТОКОВ!'
 
     def restart_all(self):
         self.event.set()
         self.restart_command = True
-        return get_back_control_template('TRY RESTART!')
+        return 'TRY RESTART!'
 
-    def show_wallet(self):
-        global_text = get_html_dict(self.info.wallet_info, 'Информация о кошельке')
-        return get_back_control_template(global_text)
 
     def get_telegram_message(self):
         now = datetime.now().strftime('%m/%d/%Y, %H:%M:%S')

@@ -19,6 +19,22 @@ def get_hash(password):
     )
 
 
+THREAD_CHIA_PROPERTY = ['chia_path',
+                        'thread_per_plot',
+                        'parallel_plot', 'temp_dir',
+                        'work_dir', 'memory',
+                        'bucket', 'k_size',
+                        'plots_count',
+                        'auto_restart',
+                        'auto_find_exe',
+                        'pause_before_start',
+                        'recheck_work_dir',
+                        'fingerprint', 'pool_pub_key', 'farmer_pub_key',
+                        'start_node', 'set_peer_address',
+                        'start_shell', 'shell_name', 'p_open_shell', 'code_page',
+                        'bitfield_disable']
+
+
 def get_threads_configs():
     default_config = {'chia_path': '~/chia.exe',
                       'thread_per_plot': '2',
@@ -59,7 +75,8 @@ def get_threads_configs():
             sys.exit(1)
     password = get_hash(default_config.get('password', 'Qwerty12345'))
     default_config['password'] = password
-    config_thread = [read_params_from_section(config, section, default_config) for section in config.sections()
+    config_thread = [read_params_from_section(config, section, default_config, THREAD_CHIA_PROPERTY) for section in
+                     config.sections()
                      if section != 'default']
     return config_thread, default_config
 

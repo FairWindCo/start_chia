@@ -5,7 +5,7 @@ from pathlib import Path
 import jinja2
 from sanic import Sanic, html, response
 from sanic.exceptions import abort
-from sanic.response import stream, redirect
+from sanic.response import stream
 from sanic_auth import Auth, User
 from sanic_jinja2 import SanicJinja2
 from sanic_session import Session
@@ -72,25 +72,21 @@ async def view_log(request, name):
 @auth.login_required(handle_no_auth=handle_no_auth)
 async def stop_all(request):
     context = app.ctx.processor.stop_all()
-    app.add_task(lambda _: app.stop())
-    return html(context)
+    app.add_task(lambda: app.stop())
+    return jinja.render('menu.html', request, context=context)
 
 
 @app.route('/kill_threads')
 @auth.login_required(handle_no_auth=handle_no_auth)
 async def kill_threads(request):
-    return html(app.ctx.processor.kill_threads())
+    res = app.ctx.processor.kill_threads()
+    return jinja.render('menu.html', request, context=res)
 
 
 @app.route('/show_config')
 @auth.login_required(handle_no_auth=handle_no_auth)
 async def show_config(request):
     return html(app.ctx.processor.show_config())
-
-
-@app.route('/stat2')
-async def show_stat2(request):
-    return html(app.ctx.processor.show_stat())
 
 
 @app.route('/stat')
@@ -101,21 +97,22 @@ async def show_stat(request):
 @app.route('/stop_iteration_all')
 @auth.login_required(handle_no_auth=handle_no_auth)
 async def stop_iteration_all(request):
-    return html(app.ctx.processor.stop_iteration_all())
+    res = app.ctx.processor.stop_iteration_all()
+    return jinja.render('menu.html', request, context=res)
 
 
 @app.route('/restart_workers')
 @auth.login_required(handle_no_auth=handle_no_auth)
 async def restart_all(request):
-    return html(app.ctx.processor.restart_all())
+    res = app.ctx.processor.restart_all()
+    return jinja.render('menu.html', request, context=res)
 
 
 @app.route('/stop_iteration/<index_element:int>')
 @auth.login_required(handle_no_auth=handle_no_auth)
 def stop_iteration(request, index_element):
     res = app.ctx.processor.stop_iteration(index_element)
-    if res:
-        return html(res)
+    return jinja.render('menu.html', request, context=res)
 
 
 @app.route('/stop/<stop_index:int>')
@@ -159,20 +156,9 @@ async def logout(request):
     return response.redirect('/login')
 
 
-@app.route('/wallet2')
-async def get_wallet2(request):
-    return html(processor.show_wallet())
-
-
 @app.route('/wallet')
 async def get_wallet(request):
     return jinja.render('wallet.html', request, wallet=app.ctx.processor.info.wallet_info)
-
-
-@app.route('/test')
-async def get_log(request):
-    current_path = get_current_path('templates', 'test.html')
-    return jinja.render('test.html', request, greetings="Hello, sanic!")
 
 
 @app.route('/control')

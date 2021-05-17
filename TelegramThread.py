@@ -24,14 +24,14 @@ class TelegramThread(Thread):
         event_loop_a = asyncio.new_event_loop()
         asyncio.set_event_loop(event_loop_a)
         self.event.wait(5)
-        self.last_plots = reduce(lambda el: el.current, self.main_processor.threads, 0)
+        self.last_plots = reduce(lambda _sum, el: el.current + _sum, self.main_processor.threads, 0)
         self.last_send = datetime.now()
         while self.worked:
             if api_id and api_hash and send_to:
                 self.event.wait(sleep_time)
                 try:
                     now = datetime.now()
-                    current = reduce(lambda el: el.current, self.main_processor.threads, 0)
+                    current = reduce(lambda _sum, el: el.current + _sum, self.main_processor.threads, 0)
                     delta = now - self.last_send
                     created = current - self.last_plots
                     info = self.main_processor.get_telegram_message()

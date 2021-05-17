@@ -58,11 +58,14 @@ def find_chia():
             print(f'PATH FOUND: {found_path} {found_path.stat().st_size:3d}')
 
 
-def read_params_from_section(config_, section, default=None):
+def read_params_from_section(config_, section, default=None, copy_list_name: [str] = None):
     if default is None:
         default = {}
     else:
-        default = default.copy()
+        if copy_list_name is None:
+            default = default.copy()
+        else:
+            default = {k: default.get(k, None) for k in copy_list_name}
     from_file = {key: config_[section][key] for key in config_[section] if config_[section][key]}
     default.update(from_file)
     default['name'] = section
