@@ -7,8 +7,7 @@ import psutil
 from InfoThread import InfoThread
 from TelegramThread import TelegramThread
 from chia_thread_config import get_threads_configs, ChieThreadConfig
-from utils import check_bool, GIGABYTE, get_command_for_execute_with_shell, get_html_dict
-from web_template import get_base_html_template, get_back_control_template, get_back_template
+from utils import check_bool, GIGABYTE, get_command_for_execute_with_shell
 
 
 class MainThread(Thread):
@@ -105,18 +104,23 @@ class MainThread(Thread):
             'threads': self.threads
         }
 
+
     def show_config(self):
-        global_text = get_html_dict(self.main_config, 'Глобальная конфигурация')
-        per_plot = ''.join([get_html_dict(thread.config, thread.name) for thread in self.threads])
-        cmds = ''.join([f'<li>{thread.cmd}<li>' for thread in self.threads])
-        context = f'<h1>КОНФИГУРАЦИЯ СИСТЕМЫ</h1>{global_text}\
-                  <h2>Конфигурации потоков</h2>{per_plot}<h2>Строки запуска</h2><ul>{cmds}</ul>'
-        return get_back_control_template(context)
+        return {
+            'threads': self.threads,
+            'default_config': self.main_config,
+        }
+        # global_text = get_html_dict(self.main_config, 'Глобальная конфигурация')
+        # per_plot = ''.join([get_html_dict(thread.config, thread.name) for thread in self.threads])
+        # cmds = ''.join([f'<li>{thread.cmd}<li>' for thread in self.threads])
+        # context = f'<h1>КОНФИГУРАЦИЯ СИСТЕМЫ</h1>{global_text}\
+        #           <h2>Конфигурации потоков</h2>{per_plot}<h2>Строки запуска</h2><ul>{cmds}</ul>'
+        # return get_back_control_template(context)
 
     def stop(self, stop_index: int):
         if 0 <= stop_index < len(self.threads):
             self.threads[stop_index].kill()
-            return get_back_control_template('THREAD STOP COMMAND!')
+            return 'THREAD STOP COMMAND!'
         else:
             return None
 

@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 import jinja2
-from sanic import Sanic, html, response
+from sanic import Sanic, response
 from sanic.exceptions import abort
 from sanic.response import stream
 from sanic_auth import Auth, User
@@ -39,7 +39,8 @@ def shutdown_server():
 @app.route('/get_self_program')
 async def get_self_program(request):
     current_path = os.getcwd()
-    return await response.file(directory=current_path, filename='main.exe')
+    path = os.path.join(current_path, 'main.exe')
+    return await response.file(path, filename='main.exe')
 
 
 @app.route('/log/<name>')
@@ -48,7 +49,7 @@ async def get_log(request, name):
     path_to_log_file = Path(current_path).joinpath(f'{name}.log')
     print(path_to_log_file)
     if path_to_log_file.exists():
-        return await response.file(directory=current_path, filename=f'{name}.log')
+        return await response.file(path_to_log_file, filename=f'{name}.log')
     else:
         abort(404)
 
@@ -61,8 +62,8 @@ async def view_log(request, name):
         async def gen_stream(response):
             with open(path_to_log_file, 'rt') as file:
                 for line in file:
-                    await response.write(f'{line}\n')
-
+                    if line and not line == '\n' and not line == '\r':
+                        await response.write(f'{line}')
         return stream(gen_stream)
     else:
         abort(404)
@@ -86,7 +87,7 @@ async def kill_threads(request):
 @app.route('/show_config')
 @auth.login_required(handle_no_auth=handle_no_auth)
 async def show_config(request):
-    return html(app.ctx.processor.show_config())
+    return jinja.render('configs.html', request, **app.ctx.processor.show_config())
 
 
 @app.route('/stat')
