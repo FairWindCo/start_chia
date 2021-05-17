@@ -89,6 +89,8 @@ class ChieThread(Thread):
             try:
                 pause = float(pause)
                 if pause > 0:
+                    at_run = (datetime.now() + timedelta(seconds=pause)).strftime('%d.%m.%Y %H:%M:%S')
+                    self.status = f'ПАУЗА ДО {at_run}'
                     time.sleep(pause)
             except ValueError:
                 pass
