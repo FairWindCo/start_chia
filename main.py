@@ -5,7 +5,7 @@ from pathlib import Path
 import jinja2
 from sanic import Sanic, html, response
 from sanic.exceptions import abort
-from sanic.response import stream
+from sanic.response import stream, redirect
 from sanic_auth import Auth, User
 from sanic_jinja2 import SanicJinja2
 from sanic_session import Session
@@ -184,6 +184,21 @@ async def get_control(request):
 @app.route('/')
 async def get_log(request):
     return jinja.render('main.html', request, **app.ctx.processor.get_main_info())
+
+
+@app.route('/modify/<index:int>', methods=['GET', 'POST'])
+@auth.login_required(handle_no_auth=handle_no_auth)
+async def modify_count(request, index: int):
+    thread_info = app.ctx.processor.threads[index]
+    message = ''
+    if request.method == 'POST':
+        try:
+            new_count = int(request.form.get('count', thread_info.last))
+            thread_info.last = new_count
+        except ValueError as e:
+            message = e
+    return jinja.render('modify.html', request, name=thread_info.name, count_task=thread_info.last,
+                        current_task=thread_info.current, message=message)
 
 
 if __name__ == '__main__':

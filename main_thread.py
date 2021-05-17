@@ -167,13 +167,13 @@ class MainThread(Thread):
         now = datetime.now().strftime('%m/%d/%Y, %H:%M:%S')
         disk_info_data = [(p.mountpoint, psutil.disk_usage(p.mountpoint))
                           for p in psutil.disk_partitions() if p.fstype and p.opts.find('fixed') >= 0]
-        disk_info = '\n'.join([f'ДИСК {di[0]} СВОБОДНО {(di[1].free / GIGABYTE):.2f}Гб '
-                               f'из {(di[1].total / GIGABYTE):.2f}Гб  {di[1].percent}%'
+        disk_info = '\n'.join([f'HDD {di[0]} {(di[1].free / GIGABYTE):.2f}/'
+                               f'{(di[1].total / GIGABYTE):.2f}Гб'
                                for di in disk_info_data])
         context = '\n'.join(
-            [f'{i:2d}.ПОТОК {thread.name} ВЫПОЛНЕНО {thread.current} из {thread.last} \
-                ТЕКУЩАЯ ФАЗА {thread.phase} ВРЕМЯ СОЗДАНИЯ {thread.last_time}'
+            [f'{i:2d}.ПОТОК {thread.name} {thread.current}/{thread.last} \
+                ФАЗА {thread.phase} ПЛОТ ЗА {thread.last_time}'
                 for i, thread in
-             enumerate(self.threads)])
+                    enumerate(self.threads)])
         message = f'{now}\nИнформция о дисках\n{disk_info}\n{context}'
         return message

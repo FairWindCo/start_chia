@@ -13,17 +13,32 @@
     <div class="card m-1">
         <div class="card-title align-center align-content-center"><h6 class="">{{th.name}}</h6></div>
         <div class="card-body">
-            <div class="row flex-wrap">
+            <div class="row flex-wrap justify-content-md-center">
                 {% for key,val in th.phase_stat.items() %}
                 <div class="col-6 card">
                     <div class="card-title">{{key}}</div>
                     <div class="card-body">
-                    {% for k,v in val.items() %}
                     <div class="row">
-                    <div class="col-6">{{k}}</div>
-                    <div class="col-6">{{v}}</div>
-                        </div>
-                    {% endfor %}
+                        <div class="col-6 text-start">Статистика за</div>
+                        <div class="col-6 text-end">{{val['time']}}</div>
+                        <div class="col-4  text-start">Мин время</div>
+                        <div class="col-3 text-center">{{val['min'][0]|round(1)}}c</div>
+                        <div class="col-5 text-end">{{val['min'][1]}}</div>
+                        <div class="col-4  text-start">Макс время</div>
+                        <div class="col-3 text-center">{{val['max'][0]|round(1)}}c</div>
+                        <div class="col-5 text-end">{{val['max'][1]}}</div>
+                        <div class="col-4  text-start">Среднее</div>
+                        <div class="col-3 text-center">{{val['avg'][0]|round(1)}}c</div>
+                        <div class="col-5 text-end">{{val['avg'][1]}}</div>
+                        <div class="col-4  text-start">Последния</div>
+                        <div class="col-3 text-center">{{val['last'][0]|round(1)}}c</div>
+                        <div class="col-5 text-end">{{val['last'][1]}}</div>
+                        <div class="col-6 text-start">Количество</div>
+                        <div class="col-6 text-end">{{val['count']}}</div>
+                        <div class="col-4  text-start">Общее время</div>
+                        <div class="col-3 text-center">{{val['total'][0]|round(1)}}c</div>
+                        <div class="col-5 text-end">{{val['total'][1]}}</div>
+                    </div>
                     </div>
                 </div>
                 {% endfor %}

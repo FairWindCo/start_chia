@@ -22,14 +22,9 @@ class InfoThread(Thread):
         self.wallet_info = {}
 
     def run(self) -> None:
-        api_id = self.main_processor.main_config.get('api_id')
-        api_hash = self.main_processor.main_config.get('api_hash')
-        send_to = self.main_processor.main_config.get('send_to', '').split(',')
-
         sleep_time = int(self.main_processor.main_config.get('info_update_time', 600))
-        chia_exe = self.main_processor.main_config.get('chia_exe')
-        # Remember to use your own values from my.telegram.org!
-
+        chia_exe = self.main_processor.main_config.get('chia_path')
+        print(chia_exe)
         while self.worked:
             for line in self.run_command_and_get_output(f'{chia_exe} wallet show'):
                 if line.startswith('Connection error.'):

@@ -36,15 +36,14 @@
                 {{ load_avg[2] }}% за 15 мин
             </div>
         </div>
-        <div class="flex-row flex-wrap mt-5">
+        <div class="row flex-row flex-wrap mt-5 align-content-center justify-content-center">
             {% for di in disk_info %}
-            <div class="col card">
+            <div class="col-sm-6 col-lg-2 card m-1">
                 <div class="card-title">
                     {{di[0]}} - {{di[3]}}%
                 </div>
-
-                <div class="row card-body">
-                    <div class="col">Свободно</div>
+                <div class="row card-body p-0 m-0">
+                    <div class="col">Free:</div>
                     <div class="col">{{di[1]|round(2)}}Гб</div>
                     <div class="col">из {{di[2]|round(2)}}Гб</div>
                 </div>
@@ -52,7 +51,7 @@
             {% endfor %}
         </div>
     </div>
-    <div class="flex-row flex-wrap mt-5">
+    <div class="row flex-column flex-wrap mt-5">
     {% for th in threads %}
     <div class="col card m-1">
         <div class="card-title align-center align-content-center"><h6 class="">{{th.name}}</h6></div>
@@ -76,6 +75,10 @@
             <div class="row">
                 <div class="col-4">СРЕДНЕЕ ВРЕМЯ ПЛОТА</div>
                 <div class="col-8">{{th.ave_time}}</div>
+            </div>
+            <div class="row">
+                <div class="col-4">СТАТУС</div>
+                <div class="col-8">{{th.status}}</div>
             </div>
             <div class="row">
                 <div class="col">{{th.start_phase_info}}</div>

@@ -8,7 +8,7 @@
             <h5 class="text-center col-8">Состояние системы</h5>
             <a class="col-4 btn button btn-dark" href="/control">Обновить</a>
         </div>
-        <div class="flex-row flex-wrap text-center">
+        <div class="row flex-row flex-wrap text-center">
             <div class="col">
                 Загрузка процессора
             </div>
@@ -23,7 +23,7 @@
             </div>
         </div>
     </div>
-    <div class="flex-row flex-wrap text-center">
+    <div class="row flex-column flex-wrap text-center">
     {% for th in threads %}
     <div class="col card m-1">
         <div class="card-title align-center align-content-center"><h6 class="">{{th.name}}</h6></div>
@@ -41,10 +41,15 @@
                 <div class="col-8">{{th.last_time}}</div>
             </div>
             <div class="row">
+                <div class="col-4">СТАТУС</div>
+                <div class="col-8">{{th.status}}</div>
+            </div>
+            <div class="row">
                 <a class="btn btn-info col-3" href="/view_log/{{th.name}}">ЖУРНАЛ</a>
                 <a class="btn btn-info col-3" href="/log/{{loop.index0}}">СКАЧАТЬ ЖУРНАЛ</a>
                 <a class="btn btn-info col-3" href="/stop/{{loop.index0}}">ОСТАНОВИТЬ</a>
                 <a class="btn btn-info col-3" href="/stop_iteration/{{loop.index0}}">СТОП ИТЕРАЦИИ</a>
+                <a class="btn btn-info col-3" href="/modify/{{loop.index0}}">ИЗМЕНИТЬ КОЛИЧЕСТВО</a>
             </div>
         </div>
     </div>

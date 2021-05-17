@@ -4,7 +4,8 @@ import re
 import signal
 import subprocess
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
+from itertools import count
 from pathlib import Path
 from threading import Thread
 
@@ -16,6 +17,7 @@ from utils import check_bool, get_command_for_execute_with_shell
 matching = re.compile(r'Starting phase ([0-9]*\/[0-9]*):')
 ex_data = re.compile(r'\s*(.*)\s+([A-Z][a-z]{2,4}\s+[A-Z][a-z]{2,10}\s+\d{1,2}\s+\d{1,2}:\d{1,2}:\d{1,2}\s+\d{2,4}.*)$')
 matching_time = re.compile(r'Time for phase ([0-9]+) = ([0-9.]+) seconds. CPU \(([0-9.]+)%\) ([\w\d\s:]*)$')
+
 
 class ChieThread(Thread):
     def __init__(self, name, file, cmd, current, last, temp_dir, config_for_thread):
@@ -29,7 +31,7 @@ class ChieThread(Thread):
         self.need_stop_iteration = False
         self.temp_dir = temp_dir
         self.log = open(f'{self.name}.log', 'at')
-        self.phase = 'init'
+        self.phase = 'ИНИЦИАЛИЗАЦИЯ'
         self.last_time = 'unknown'
         self.config = config_for_thread
         self.plot_created = 0
@@ -38,7 +40,7 @@ class ChieThread(Thread):
         self.start_shell = check_bool(self.config.get('p_open_shell', False))
         self.end_phase_info = ''
         self.start_phase_info = ''
-        self.status = 'INIT'
+        self.status = 'ИНИЦИАЛИЗАЦИЯ'
         self.phase_stat = {}
         if os.name == 'nt':
             if self.start_shell:
@@ -95,99 +97,109 @@ class ChieThread(Thread):
         if not str(self.current).isdecimal() or not str(self.last).isdecimal():
             self.write_log(f'ERROR IN RANGE PARAMS from {self.current} to {self.last}', need_stdout=True)
             return
-        for ind in range(self.current, self.last):
-            try:
-                start_time = datetime.now()
-                if not self.need_stop:
-                    cmd = get_command_for_execute_with_shell(self.cmd, self.config)
-                    self.process = subprocess.Popen(cmd,
-                                                    stderr=subprocess.PIPE,
-                                                    stdout=subprocess.PIPE,
-                                                    shell=self.start_shell, encoding=self.code_page,
-                                                    universal_newlines=True)
-                while not self.need_stop and self.process.poll() is None:
-                    text = self.process.stdout.readline()
-                    result = matching.search(text)
-                    if result:
-                        self.phase = result.group(1)
-                        result = ex_data.search(text, result.end())
+        for ind in count(self.current):
+            if ind < self.last:
+                try:
+                    start_time = datetime.now()
+                    if not self.need_stop:
+                        cmd = get_command_for_execute_with_shell(self.cmd, self.config)
+                        self.process = subprocess.Popen(cmd,
+                                                        stderr=subprocess.PIPE,
+                                                        stdout=subprocess.PIPE,
+                                                        shell=self.start_shell, encoding=self.code_page,
+                                                        universal_newlines=True)
+                    while not self.need_stop and self.process.poll() is None:
+                        text = self.process.stdout.readline()
+                        result = matching.search(text)
                         if result:
-                            self.start_phase_info = f'{result.group(1)} [{result.group(2)}]'
-                    else:
-                        result = matching_time.search(text)
-                        if result:
-                            seconds = float(result.group(2))
-                            minutes = math.ceil(seconds / 60)
-                            name = f'Фаза {result.group(1)}'
-                            statistics = self.phase_stat.get(name, {
-                                'Последнее значение': 0.0,
-                                'Минимальное значение значение': 0.0,
-                                'Максимальное значение значение': 0.0,
-                                'Средне значение': 0.0,
-                                'Количество': 0.0,
-                                'Сумарное': 0.0,
-                            })
+                            self.phase = result.group(1)
+                            self.status = 'Запущена фаза {} {}'.format(self.phase,
+                                                                       datetime.now().strftime("%d.%m.%Y %H:%M:%S "))
+                            result = ex_data.search(text, result.end())
+                            if result:
+                                self.start_phase_info = f'{result.group(1)} [{result.group(2)}]'
+                        else:
+                            result = matching_time.search(text)
+                            if result:
+                                seconds = float(result.group(2))
+                                minutes = math.ceil(seconds / 60)
+                                name = f'Фаза {result.group(1)}'
+                                statistics = self.phase_stat.get(name, {
+                                    'last': (0.0, timedelta(seconds=0)),
+                                    'min': (0.0, timedelta(seconds=0)),
+                                    'max': (0.0, timedelta(seconds=0)),
+                                    'avg': (0.0, timedelta(seconds=0)),
+                                    'count': 0.0,
+                                    'total': (0.0, timedelta(seconds=0)),
+                                    'time': datetime.now().strftime('%d/%m/%y %H:%M:%S')
+                                })
 
-                            statistics['Последнее значение'] = seconds
-                            if seconds > statistics['Максимальное значение значение']:
-                                statistics['Максимальное значение значение'] = seconds
-                            if statistics['Минимальное значение значение'] == 0:
-                                statistics['Минимальное значение значение'] = seconds
-                            if seconds < statistics['Минимальное значение значение']:
-                                statistics['Минимальное значение значение'] = seconds
-                            statistics['Сумарное'] = statistics['Сумарное'] + seconds
-                            statistics['Количество'] = (self.current + 1)
-                            statistics['Средне значение'] = statistics['Сумарное'] / (self.current + 1)
+                                statistics['last'] = (seconds, timedelta(seconds=seconds))
+                                if seconds > statistics['max'][0]:
+                                    statistics['max'] = (seconds, timedelta(seconds=seconds))
+                                if statistics['min'] == 0:
+                                    statistics['min'] = (seconds, timedelta(seconds=seconds))
+                                if seconds < statistics['min'][0]:
+                                    statistics['min'] = (seconds, timedelta(seconds=seconds))
+                                total = statistics['total'][0]
+                                statistics['total'] = (total + seconds, timedelta(seconds=total + seconds))
+                                statistics['count'] = (self.current + 1)
+                                avg = total + seconds / (self.current + 1)
+                                statistics['avg'] = (avg, timedelta(seconds=avg))
+                                statistics['time'] = datetime.now().strftime('%d/%m/%y %H:%M:%S')
 
-                            self.phase_stat[name] = statistics
-                            self.end_phase_info = f'Фаза {result.group(1)} - \
-                            завершина за {minutes} мин CPU {result.group(3)}% [{result.group(4)}]'
+                                self.phase_stat[name] = statistics
+                                self.end_phase_info = f'Фаза {result.group(1)} - \
+                                завершина за {minutes} мин CPU {result.group(3)}% [{result.group(4)}]'
 
-                    self.write_log(text, False, need_flush=True)
-                if self.need_stop and self.process.poll() is None:
-                    self.kill()
+                        self.write_log(text, False, need_flush=True)
+                    if self.need_stop and self.process.poll() is None:
+                        self.kill()
 
-                if self.process and self.process.returncode == 0:
-                    elapsed_time = datetime.now() - start_time
-                    self.current = ind + 1
-                    self.write_last()
-                    self.write_log(f'plot {self.current:3d} created at {elapsed_time}\n')
-                    self.last_time = elapsed_time
-                    self.plot_created += 1
-                    self.total_time += elapsed_time.total_seconds()
-                    self.ave_time = math.ceil(self.total_time / self.plot_created)
-                elif not self.need_stop:
-                    error_text = self.process.stderr.read()
-                    self.status = f'ERROR {self.current:3d}: {error_text}'
-                    self.write_log(f'ERROR {self.current:3d}: {error_text}\n')
+                    if self.process and self.process.returncode == 0:
+                        elapsed_time = datetime.now() - start_time
+                        self.current = ind + 1
+                        self.write_last()
+                        self.write_log(f'plot {self.current:3d} created at {elapsed_time}\n')
+                        self.last_time = elapsed_time
+                        self.plot_created += 1
+                        self.total_time += elapsed_time.total_seconds()
+                        self.ave_time = math.ceil(self.total_time / self.plot_created)
+                    elif not self.need_stop:
+                        error_text = self.process.stderr.read()
+                        self.status = f'ERROR {self.current:3d}: {error_text}'
+                        self.write_log(f'ERROR {self.current:3d}: {error_text}\n')
 
-                if self.need_stop:
-                    self.write_log(f'ABORT plot {self.current} \n\n', need_flush=True, need_stdout=True)
-                    self.status = 'ABORT'
+                    if self.need_stop:
+                        self.write_log(f'ABORT plot {self.current} \n\n', need_flush=True, need_stdout=True)
+                        self.status = 'ABORT'
+                        self.process = None
+                        return
                     self.process = None
-                    return
-                self.process = None
-            except Exception as e:
-                self.process = None
-                self.status = f'ERROR {e} on plot {self.current}'
-                self.write_log(f'ERROR {e} plot {self.current} created \n\n')
+                except Exception as e:
+                    self.process = None
+                    self.status = f'ERROR {e} on plot {self.current}'
+                    self.write_log(f'ERROR {e} plot {self.current} created \n\n')
 
-            if check_bool(self.config.get('recheck_work_dir', False)):
-                chia_cmd_path = self.config.get('chia_path')
-                if chia_cmd_path:
-                    work_dir = self.config['work_dir']
-                    subprocess.Popen(get_command_for_execute_with_shell(f'{chia_cmd_path} plots add -d {work_dir}',
-                                                                        self.config), shell=self.start_shell)
-                    self.status = 'РЕГИСТРАЦИЯ КАТАЛОГА'
+                if check_bool(self.config.get('recheck_work_dir', False)):
+                    chia_cmd_path = self.config.get('chia_path')
+                    if chia_cmd_path:
+                        work_dir = self.config['work_dir']
+                        subprocess.Popen(get_command_for_execute_with_shell(f'{chia_cmd_path} plots add -d {work_dir}',
+                                                                            self.config), shell=self.start_shell)
+                        self.status = 'РЕГИСТРАЦИЯ КАТАЛОГА'
 
-            if self.need_stop_iteration:
-                self.write_log(f'ABORT ITERATION \n\n', need_flush=True, need_stdout=True)
-                self.status = 'ABORT ITERATION'
+                if self.need_stop_iteration:
+                    self.write_log(f'ABORT ITERATION \n\n', need_flush=True, need_stdout=True)
+                    self.status = 'ABORT ITERATION'
+                    break
+            else:
                 break
 
         self.process = None
         self.need_stop = True
         self.phase = f'ПРОЦЕСС ЗАВЕРШЕН! {datetime.now()}'
+        self.status = 'ЗАВЕРШЕН'
         try:
             os.remove(self.file)
         except FileNotFoundError:
