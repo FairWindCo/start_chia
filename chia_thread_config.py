@@ -60,7 +60,7 @@ def get_threads_configs():
         default_config = read_params_from_section(config, 'default', default_config)
     chia_path = default_config.get('chia_path', None)
     is_imitator = chia_path.find('python.exe') >= 0
-    if chia_path is None and not is_imitator and not Path(default_config['chia_path']).exists():
+    if chia_path is None or (not is_imitator and not Path(default_config['chia_path']).exists()):
         if check_bool(default_config.get('auto_find_exe', True)):
             path_chia_exe = find_chia()
         else:
