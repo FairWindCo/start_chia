@@ -6,15 +6,16 @@ import subprocess
 import time
 from datetime import datetime, timedelta
 from itertools import count
+from multiprocessing import Event
 from pathlib import Path
 from threading import Thread
 
 import psutil
 from psutil import NoSuchProcess
 
-from utils import check_bool, get_command_for_execute_with_shell
+from utils import check_bool, get_command_for_execute_with_shell, calc_wakeup_time
 
-matching = re.compile(r'Starting phase ([0-9]*\/[0-9]*):')
+matching = re.compile(r'Starting phase ([0-9]*/[0-9]*):')
 ex_data = re.compile(r'\s*(.*)\s+([A-Z][a-z]{2,4}\s+[A-Z][a-z]{2,10}\s+\d{1,2}\s+\d{1,2}:\d{1,2}:\d{1,2}\s+\d{2,4}.*)$')
 matching_time = re.compile(r'Time for phase ([0-9]+) = ([0-9.]+) seconds. CPU \(([0-9.]+)%\) ([\w\d\s:]*)$')
 
@@ -42,6 +43,9 @@ class ChieThread(Thread):
         self.start_phase_info = ''
         self.status = 'ИНИЦИАЛИЗАЦИЯ'
         self.phase_stat = {}
+        self.iteration_pause = 0
+        self.event = Event()
+        self.thread_paused = False
         if os.name == 'nt':
             if self.start_shell:
                 self.code_page = 'cp866'
@@ -54,7 +58,7 @@ class ChieThread(Thread):
         if self.log:
             try:
                 self.log.close()
-            except Exception:
+            except IOError:
                 pass
 
     def write_last(self):
@@ -82,6 +86,12 @@ class ChieThread(Thread):
             except OSError as e:
                 self.write_log(f'ERROR in {f} - {e.strerror} ')
 
+    def wakeup(self):
+        self.event.set()
+
+    def set_pause(self, pause_time: int):
+        self.iteration_pause = pause_time
+
     def run(self) -> None:
         self.clear_temp()
         pause = self.config.get('pause_before_start', 0)
@@ -89,9 +99,10 @@ class ChieThread(Thread):
             try:
                 pause = float(pause)
                 if pause > 0:
-                    at_run = (datetime.now() + timedelta(seconds=pause)).strftime('%d.%m.%Y %H:%M:%S')
+                    at_run = calc_wakeup_time(pause)
                     self.status = f'ПАУЗА ДО {at_run}'
-                    time.sleep(pause)
+                    self.event.wait(pause)
+                    self.event.clear()
             except ValueError:
                 pass
 
@@ -103,6 +114,15 @@ class ChieThread(Thread):
             if ind < self.last:
                 try:
                     start_time = datetime.now()
+                    if self.iteration_pause > 0:
+                        self.thread_paused = True
+                        at_run = calc_wakeup_time(int(self.iteration_pause))
+                        self.status = f'ПАУЗА ДО {at_run}'
+                        self.event.wait(int(self.iteration_pause))
+                        self.thread_paused = False
+                        self.event.clear()
+                        self.iteration_pause = 0
+
                     if not self.need_stop:
                         cmd = get_command_for_execute_with_shell(self.cmd, self.config)
                         self.process = subprocess.Popen(cmd,
@@ -176,6 +196,7 @@ class ChieThread(Thread):
                         self.write_log(f'ABORT plot {self.current} \n\n', need_flush=True, need_stdout=True)
                         self.status = 'ABORT'
                         self.process = None
+                        print(f'{self.name} - shutdown')
                         return
                     self.process = None
                 except Exception as e:
@@ -212,6 +233,7 @@ class ChieThread(Thread):
                 self.write_log(f'{k}:{v:10.0f}')
         self.log.close()
         self.log = None
+        print(f'{self.name} - shutdown')
 
     def kill(self):
         self.need_stop = True

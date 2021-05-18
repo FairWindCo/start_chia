@@ -1,5 +1,6 @@
 import os
 import sys
+from collections import deque
 from pathlib import Path
 
 import jinja2
@@ -64,16 +65,36 @@ async def view_log(request, name):
                 for line in file:
                     if line and not line == '\n' and not line == '\r':
                         await response.write(f'{line}')
+
         return stream(gen_stream)
     else:
         abort(404)
+
+
+@app.route('/lastlog/<name>')
+async def view_log(request, name):
+    current_path = os.getcwd()
+    path_to_log_file = Path(current_path).joinpath(f'{name}.log')
+    if path_to_log_file.exists():
+        lines = []
+        with open(path_to_log_file, 'rt') as file:
+            lines = deque(filter(lambda el: el and el[0] not in ['\n', '\r'], file.readlines()), 30)
+            lines.reverse()
+            print(lines)
+        return jinja.render('lastlog.html', request, lines=lines, name=name)
+    else:
+        abort(404)
+
+
+async def stop_web_server():
+    app.stop()
 
 
 @app.route('/stop_all')
 @auth.login_required(handle_no_auth=handle_no_auth)
 async def stop_all(request):
     context = app.ctx.processor.stop_all()
-    app.add_task(lambda: app.stop())
+    app.add_task(stop_web_server)
     return jinja.render('menu.html', request, context=context)
 
 
@@ -111,14 +132,40 @@ async def restart_all(request):
 
 @app.route('/stop_iteration/<index_element:int>')
 @auth.login_required(handle_no_auth=handle_no_auth)
-def stop_iteration(request, index_element):
+def stop_iteration(request, index_element: int):
     res = app.ctx.processor.stop_iteration(index_element)
     return jinja.render('menu.html', request, context=res)
 
 
+@app.route('/wakeup/<index_element:int>')
+@auth.login_required(handle_no_auth=handle_no_auth)
+def wakeup(request, index_element: int):
+    res = app.ctx.processor.wakeup_thread(index_element)
+    return jinja.render('menu.html', request, context=res)
+
+
+@app.route('/pause/<index_element:int>', methods=['GET', 'POST'])
+@auth.login_required(handle_no_auth=handle_no_auth)
+def pause(request, index_element: int):
+    if 0 <= index_element < len(app.ctx.processor.threads):
+        thread_info = app.ctx.processor.threads[index_element]
+        if request.method == 'POST':
+            try:
+                new_pause = int(request.form.get('pause', 0))
+                res = app.ctx.processor.pause_thread(index_element, new_pause)
+            except ValueError:
+                res = 'Не верное значение'
+            return jinja.render('menu.html', request, context=res)
+        message = 'ПОТОК УЖЕ НА ПАУЗЕ' if thread_info.thread_paused else ''
+        return jinja.render('pause.html', request, name=thread_info.name, count_task=thread_info.last,
+                            current_task=thread_info.current, message=message)
+    else:
+        abort(404)
+
+
 @app.route('/stop/<stop_index:int>')
 @auth.login_required(handle_no_auth=handle_no_auth)
-async def stop(request, stop_index):
+async def stop(request, stop_index: int):
     res = app.ctx.processor.stop(stop_index)
     jinja.flash(request, 'SEND STOP REQUEST')
     if res:
@@ -176,16 +223,19 @@ async def get_log(request):
 @app.route('/modify/<index:int>', methods=['GET', 'POST'])
 @auth.login_required(handle_no_auth=handle_no_auth)
 async def modify_count(request, index: int):
-    thread_info = app.ctx.processor.threads[index]
-    message = ''
-    if request.method == 'POST':
-        try:
-            new_count = int(request.form.get('count', thread_info.last))
-            thread_info.last = new_count
-        except ValueError as e:
-            message = e
-    return jinja.render('modify.html', request, name=thread_info.name, count_task=thread_info.last,
-                        current_task=thread_info.current, message=message)
+    if 0 <= index < len(app.ctx.processor.threads):
+        thread_info = app.ctx.processor.threads[index]
+        message = ''
+        if request.method == 'POST':
+            try:
+                new_count = int(request.form.get('count', thread_info.last))
+                thread_info.last = new_count
+            except ValueError as e:
+                message = e
+        return jinja.render('modify.html', request, name=thread_info.name, count_task=thread_info.last,
+                            current_task=thread_info.current, message=message)
+    else:
+        abort(404)
 
 
 if __name__ == '__main__':

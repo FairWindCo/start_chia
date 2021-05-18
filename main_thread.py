@@ -13,7 +13,7 @@ from utils import check_bool, GIGABYTE, get_command_for_execute_with_shell
 class MainThread(Thread):
 
     def __init__(self):
-        super().__init__()
+        super().__init__(name='MAIN PROCESSOR')
         self.configs, self.main_config = get_threads_configs()
         self.threads = []
         self.all_thread_stopped = True
@@ -78,6 +78,7 @@ class MainThread(Thread):
                     break
         self.info.shutdown()
         self.telegram.shutdown()
+        print(f'{self.name} - shutdown')
 
     def kill_all(self):
         self.main_config['auto_restart'] = False
@@ -96,14 +97,15 @@ class MainThread(Thread):
         disk_info = [(di[0], di[1].free / GIGABYTE, di[1].total / GIGABYTE, di[1].percent)
                      for di in disk_info_data]
         memory = psutil.virtual_memory()
+        now = datetime.now().strftime('%m/%d/%Y, %H:%M:%S')
         return {
             'load_avg': psutil.getloadavg(),
             'cpu_percent': psutil.cpu_percent(),
             'memory': (memory.available / GIGABYTE, memory.total / GIGABYTE),
             'disk_info': disk_info,
-            'threads': self.threads
+            'threads': self.threads,
+            'current_time': now
         }
-
 
     def show_config(self):
         return {
@@ -151,6 +153,19 @@ class MainThread(Thread):
         self.restart_command = True
         return 'TRY RESTART!'
 
+    def wakeup_thread(self, index):
+        if 0 <= index < len(self.threads):
+            self.threads[index].wakeup()
+            return 'THREAD WAKEUP COMMAND'
+        else:
+            return f'NO THREAD WITH INDEX {index}'
+
+    def pause_thread(self, index, pause: int):
+        if 0 <= index < len(self.threads):
+            self.threads[index].set_pause(pause)
+            return 'THREAD PAUSE ON NEXT ITERATION COMMAND'
+        else:
+            return f'NO THREAD WITH INDEX {index}'
 
     def get_telegram_message(self):
         now = datetime.now().strftime('%m/%d/%Y, %H:%M:%S')
@@ -162,7 +177,7 @@ class MainThread(Thread):
         context = '\n'.join(
             [f'{i:2d}.ПОТОК {thread.name} {thread.current}/{thread.last} \
                 ФАЗА {thread.phase} ПЛОТ ЗА {thread.last_time}'
-                for i, thread in
-                    enumerate(self.threads)])
+             for i, thread in
+             enumerate(self.threads)])
         message = f'{now}\nИнформция о дисках\n{disk_info}\n{context}'
         return message

@@ -8,7 +8,7 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0 p-md-0 p-sm-3" style="background-color: #fff; border:1px solid #1e2125;">
                 <li class="nav-item">
                     <a class="nav-link active" aria-current="page" href="/">Home</a>
                 </li>
@@ -44,7 +44,11 @@
 <div class="container">
     {% block content_int %}
     <div class="mt-5 card alert-danger">
-        {{ context }}
+        <div class="row flex-wrap justify-content-center">
+            <span class="col-12 text-center">{{ context }}</span>
+            <a class="col-4 m-3 btn button btn-info" href="/control">УПРАВЛЕНИЕ</a>
+            <a class="col-4 m-3 btn button btn-info" href="/">ГЛАВНАЯ</a>
+        </div>
     </div>
     {% endblock %}
 </div>

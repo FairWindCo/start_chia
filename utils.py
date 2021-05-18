@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from pathlib import Path
 
 
@@ -100,3 +101,7 @@ def get_command_args(config_dict):
     args = [convert_param_to_attribute(key, val) for key, val in config_dict.items()]
     command = config_dict['chia_path']
     return f'{command} plots create {" ".join(args)}'
+
+
+def calc_wakeup_time(pause: float):
+    return (datetime.now() + timedelta(seconds=pause)).strftime('%d.%m.%Y %H:%M:%S')

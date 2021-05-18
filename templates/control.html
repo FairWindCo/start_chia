@@ -5,7 +5,7 @@
 <div class="row flex-wrap mt-5">
     <div class="col-12 card">
         <div class="card-title text-center row">
-            <h5 class="text-center col-8">Состояние системы</h5>
+            <h5 class="text-center col-8">Состояние системы {{current_time}}</h5>
             <a class="col-4 btn button btn-dark" href="/control">Обновить</a>
         </div>
         <div class="row flex-row flex-wrap text-center">
@@ -45,11 +45,14 @@
                 <div class="col-8">{{th.status}}</div>
             </div>
             <div class="row">
+                <a class="btn btn-info col-4" href="/lastlog/{{th.name}}">ПОСЛЕДНЕЕ</a>
                 <a class="btn btn-info col-3" href="/view_log/{{th.name}}">ЖУРНАЛ</a>
                 <a class="btn btn-info col-3" href="/log/{{th.name}}">СКАЧАТЬ ЖУРНАЛ</a>
                 <a class="btn btn-info col-3" href="/stop/{{loop.index0}}">ОСТАНОВИТЬ</a>
                 <a class="btn btn-info col-3" href="/stop_iteration/{{loop.index0}}">СТОП ИТЕРАЦИИ</a>
                 <a class="btn btn-info col-3" href="/modify/{{loop.index0}}">ИЗМЕНИТЬ КОЛИЧЕСТВО</a>
+                <a class="btn btn-info col-3" href="/pause/{{loop.index0}}">ПАУЗА</a>
+                <a class="btn btn-info col-3" href="/wakeup/{{loop.index0}}">РАЗБУДИТЬ</a>
             </div>
         </div>
     </div>

@@ -53,6 +53,7 @@ class InfoThread(Thread):
                 elif res := farm_sync_reg.search(line):
                     self.wallet_info[res.group(1)] = res.group(2)
             self.event.wait(sleep_time)
+        print(f'{self.name} - shutdown')
 
     def shutdown(self):
         self.worked = False

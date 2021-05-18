@@ -1,0 +1,24 @@
+{% extends "menu.html" %}
+{% block content_int %}
+
+
+<div class="row flex-column flex-nowrap justify-content-center align-items-center mt-5">
+    <div class="col-12 row flex-row card justify-content-center align-items-center">
+        <h2 class="text-center col-6">Последние фрагменты журнала {{name}}</h2>
+        <a class="col-4 m-3 btn button btn-info" href="/control">УПРАВЛЕНИЕ</a>
+        <a class="col-4 m-3 btn button btn-info" href="/">ГЛАВНАЯ</a>
+    </div>
+    <div class="col-12 row flex-column card justify-content-center align-items-center">
+        {% for text_line in lines %}
+        <span class="col-12">
+            {{text_line}}
+        </span>
+        {% endfor %}
+    </div>
+    <div class="col-12 row flex-row card justify-content-center align-items-center">
+        <a class="col-4 m-3 btn button btn-info" href="/control">УПРАВЛЕНИЕ</a>
+        <a class="col-4 m-3 btn button btn-info" href="/">ГЛАВНАЯ</a>
+    </div>
+</div>
+
+{% endblock %}

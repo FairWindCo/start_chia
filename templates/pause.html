@@ -4,11 +4,12 @@
 
 <div class="row flex-nowrap justify-content-center align-items-center mt-5">
     <div class="col-12 row flex-column card justify-content-center align-items-center">
-        <h2>Изменение задания {{name}}</h2>
-        <h5 class="text-center">Выполнено {{current_task}} из {{count_task}}</h5>
+        <h2>Установка паузы в задания {{name}} для следующей итерации</h2>
+        <h4 class="text-center">Выполнено {{current_task}} из {{count_task}}</h4>
+        <h5 class="text-center">{{message}}</h5>
         <form action="" method="POST" class="row justify-content-center align-items-center">
-            <input type="number" class="col-8 username" id="name" name="count"
-                   placeholder="plot task count" value="{{pause}}">
+            <input type="number" class="col-8 username" id="pause" name="pause"
+                   placeholder="plot task count" value="0">
             <input class="col-4 m-3 btn button btn-info" id="submit" name="submit" type="submit" value="Save">
             <a class="col-4 m-3 btn button btn-info" href="/control">ВЫХОД</a>
         </form>
