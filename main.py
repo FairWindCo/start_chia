@@ -190,7 +190,7 @@ async def login(request):
             user = User(id=1, name=username)
             auth.login_user(request, user)
             jinja.flash(request, f'User login {username}')
-            return response.redirect('/')
+            return response.redirect('/control')
         if username or password:
             jinja.flash(request, 'invalid username or password')
             message = 'invalid username or password'
@@ -201,7 +201,7 @@ async def login(request):
 @auth.login_required
 async def logout(request):
     auth.logout_user(request)
-    return response.redirect('/login')
+    return response.redirect('/')
 
 
 @app.route('/wallet')

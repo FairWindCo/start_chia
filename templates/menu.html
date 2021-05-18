@@ -18,6 +18,7 @@
                 <li class="nav-item">
                     <a class="nav-link active" aria-current="page" href="/stat">Статистика</a>
                 </li>
+                {% if request.ctx.session and request.ctx.session.get('_auth') %}
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
                        data-bs-toggle="dropdown" aria-expanded="false">
@@ -36,6 +37,14 @@
                         <li><a class="dropdown-item" href="/stop_all">ЗАВЕРШИТЬ ПРОГРАММУ</a></li>
                     </ul>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" href="/logout">Выход</a>
+                </li>
+                {% else %}
+                <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" href="/control">Управление</a>
+                </li>
+                {% endif %}
             </ul>
         </div>
     </div>
