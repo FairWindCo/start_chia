@@ -4,3 +4,4 @@ venv/
 .git/
 pool*
 *.session
+config.ini
