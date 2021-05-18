@@ -1,0 +1,96 @@
+{% extends "menu.html" %}
+{% block content_int %}
+
+
+<div class="row flex-wrap mt-5">
+    <div class="col-12 card">
+        <div class="card-title text-center row">
+            <h5 class="text-center col-8">Состояние системы {{current_time}}</h5>
+            <a class="col-4 btn button btn-dark" href="/">Обновить</a>
+        </div>
+        <div class="row text-center  flex-wrap">
+            <div class="col">
+                Загрузка процессора
+            </div>
+            <div class="col">
+                {{ cpu_percent }}%
+            </div>
+            <div class="col">
+                Потребление памяти
+            </div>
+            <div class="col">
+                {{ memory[0]|round(2)  }}Гб/{{ memory[1]|round(2) }}Гб
+            </div>
+        </div>
+        <div class="row text-center">
+            <div class="col">
+                Среднее значение загрузки
+            </div>
+            <div class="col">
+                {{ load_avg[0] }}% за 1 мин
+            </div>
+            <div class="col">
+                {{ load_avg[1] }}% за 5 мин
+            </div>
+            <div class="col">
+                {{ load_avg[2] }}% за 15 мин
+            </div>
+        </div>
+        <div class="row flex-row flex-wrap mt-5 align-content-center justify-content-center">
+            {% for di in disk_info %}
+            <div class="col-sm-6 col-lg-2 card m-1">
+                <div class="card-title">
+                    {{di[0]}} - {{di[3]}}%
+                </div>
+                <div class="row card-body p-0 m-0">
+                    <div class="col">Free:</div>
+                    <div class="col">{{di[1]|round(2)}}Гб</div>
+                    <div class="col">из {{di[2]|round(2)}}Гб</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="row flex-column flex-wrap mt-5">
+    {% for th in threads %}
+    <div class="col card m-1">
+        <div class="card-title align-center align-content-center"><h6 class="">{{th.name}}</h6></div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-4">ВЫПОЛНЕНО</div>
+                <div class="col-8">{{th.current}} / {{th.last}}</div>
+            </div>
+            <div class="row">
+                <div class="col-4">ТЕКУЩАЯ ФАЗА</div>
+                <div class="col-8">{{th.phase}}</div>
+            </div>
+            <div class="row">
+                <div class="col-4">ЗАВЕРШЕННАЯ ФАЗА</div>
+                <div class="col-8">{{th.end_phase_info}}</div>
+            </div>
+            <div class="row">
+                <div class="col-4">ВРЕМЯ ПОСЛЕДНЕГО ПЛОТА</div>
+                <div class="col-8">{{th.last_time}}</div>
+            </div>
+            <div class="row">
+                <div class="col-4">СРЕДНЕЕ ВРЕМЯ ПЛОТА</div>
+                <div class="col-8">{{th.ave_time}}</div>
+            </div>
+            <div class="row">
+                <div class="col-4">СТАТУС</div>
+                <div class="col-8">{{th.status}}</div>
+            </div>
+            <div class="row">
+                <div class="col">{{th.start_phase_info}}</div>
+            </div>
+            <div class="row">
+                <a class="btn btn-info col-4" href="/lastlog/{{th.name}}">ПОСЛЕДНЕЕ</a>
+                <a class="btn btn-info col-4" href="/view_log/{{th.name}}">ЖУРНАЛ</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    </div>
+</div>
+
+{% endblock %}

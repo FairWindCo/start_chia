@@ -1,0 +1,45 @@
+{% extends "menu.html" %}
+{% block content_int %}
+
+
+<div class="row flex-wrap mt-5">
+    <div class="col-12 card">
+        <div class="card-title text-center row">
+            <h5 class="text-center col-8">Конфигурация системы</h5>
+            <a class="col-4 btn button btn-dark" href="/control">К управлению</a>
+        </div>
+    </div>
+    <div class="card m-1">
+        <div class="card-title align-center align-content-center text-center"><h6 class="">Глобальная конфигурция</h6></div>
+        <div class="card-body">
+            {% for key,value in default_config.items() %}
+            {% if value is not none %}
+            <div class="row">
+                <div class="col-4 text-start">{{key}}</div>
+                <div class="col-8 text-start">{{value}}</div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% for th in threads %}
+    <div class="card m-1">
+        <div class="card-title align-center align-content-center text-center"><h6 class="">Конфигурция {{th.name}}</h6></div>
+        <div class="card-body">
+            {% for key,value in th.config.items() %}
+                        {% if value is not none %}
+            <div class="row">
+                <div class="col-4 text-start">{{key}}</div>
+                <div class="col-8 text-start">{{value}}</div>
+            </div>
+            {% endif %}
+            {% endfor %}
+            <div class="row">
+                <div class="col-12">{{th.cmd}}</div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

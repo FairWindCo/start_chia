@@ -1,0 +1,18 @@
+{% extends "menu.html" %}
+{% block content_int %}
+
+
+<div class="row flex-nowrap justify-content-center align-items-center mt-5">
+    <div class="col-12 row flex-column card justify-content-center align-items-center">
+        <h2>Изменение задания {{name}}</h2>
+        <h5 class="text-center">Выполнено {{current_task}} из {{count_task}}</h5>
+        <form action="" method="POST" class="row justify-content-center align-items-center">
+            <input type="number" class="col-8 username" id="name" name="count"
+                   placeholder="plot task count" value="{{count_task}}">
+            <input class="col-4 m-3 btn button btn-info" id="submit" name="submit" type="submit" value="Save">
+            <a class="col-4 m-3 btn button btn-info" href="/control">ВЫХОД</a>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
