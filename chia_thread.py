@@ -230,7 +230,7 @@ class ChieThread(Thread):
         for name, stat in self.phase_stat.items():
             self.write_log(name)
             for k, v in stat.items():
-                self.write_log(f'{k}:{v:10.0f}')
+                self.write_log(f'{k}:{v[0]:10.0f} {v[1]}')
         self.log.close()
         self.log = None
         print(f'{self.name} - shutdown')
