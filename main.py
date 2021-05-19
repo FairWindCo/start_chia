@@ -158,7 +158,7 @@ def pause(request, index_element: int):
             return jinja.render('menu.html', request, context=res)
         message = 'ПОТОК УЖЕ НА ПАУЗЕ' if thread_info.thread_paused else ''
         return jinja.render('pause.html', request, name=thread_info.name, count_task=thread_info.last,
-                            current_task=thread_info.current, message=message)
+                            current_task=thread_info.current_iteration, message=message)
     else:
         abort(404)
 
@@ -233,7 +233,7 @@ async def modify_count(request, index: int):
             except ValueError as e:
                 message = e
         return jinja.render('modify.html', request, name=thread_info.name, count_task=thread_info.last,
-                            current_task=thread_info.current, message=message)
+                            current_task=thread_info.current_iteration, message=message)
     else:
         abort(404)
 

@@ -7,7 +7,8 @@ import psutil
 from InfoThread import InfoThread
 from TelegramThread import TelegramThread
 from chia_thread_config import get_threads_configs, ChieThreadConfig
-from utils import check_bool, GIGABYTE, get_command_for_execute_with_shell
+from utility.SeparateSubprocessThread import get_command_for_execute_with_shell
+from utility.utils import check_bool, GIGABYTE
 
 
 class MainThread(Thread):
@@ -84,7 +85,7 @@ class MainThread(Thread):
         self.main_config['auto_restart'] = False
         print('!TRY KILL ALL!')
         for thread in self.threads:
-            thread.kill()
+            thread.shutdown()
         self.web_server_running = False
         # os.kill(self.native_id, signal.CTRL_C_EVENT)
         self.event.set()
@@ -140,12 +141,12 @@ class MainThread(Thread):
 
     def kill_threads(self):
         for thread in self.threads:
-            thread.kill()
+            thread.shutdown()
         return 'КОМАНДА НЕМЕДЛЕННОЙ ОСТАНОВКИ ВСЕХ ПОТОКОВ!'
 
     def stop_iteration_all(self):
         for thread in self.threads:
-            thread.need_stop_iteration = True
+            thread.stop()
         return 'КОМАНДА ОСТАНОВКИ ИТЕРАЦИЙ ВСЕХ ПОТОКОВ!'
 
     def restart_all(self):

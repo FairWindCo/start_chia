@@ -2,7 +2,7 @@ import sys
 import time
 from random import randint
 
-from utils import calc_wakeup_time
+from utility.utils import calc_wakeup_time
 
 if __name__ == '__main__':
     def sleep_this(max_pause: int = 100):

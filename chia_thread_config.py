@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 from chia_thread import ChieThread
-from utils import read_params_from_section, check_bool, find_chia, get_command_args
+from utility.utils import read_params_from_section, check_bool, find_chia, get_command_args
 
 salt = os.urandom(32)  # Remember this
 
