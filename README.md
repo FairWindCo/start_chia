@@ -1,4 +1,4 @@
-# start_chia
+# Chia Plotter Control Utility
 
 This utility for control process creation chia plot 
 
@@ -6,6 +6,7 @@ This utility for control process creation chia plot
 * Automatically restart
 * Internal task query with manage
 * Plot statistics
+* Chia farm/wallet info
 
 
 
@@ -75,7 +76,14 @@ api_hash - Telegram application id
 send_to - list of recipient for send info message
 short_message - true/false - send short message
 telegram_time - interal sending message about state of work
-info_update_time - 
+info_update_time - refresh interal wallet/farm information 
+```
+
+##### for Release after 0.1
+```
+local_nodes - list full node in form <ip>:<port>, <ip>:<port>    
+search_nodes_site - url with node list, default is "https://chia.keva.app/"
+search_nodes - true/false exec site search 
 ```
 
 ###Task configuration

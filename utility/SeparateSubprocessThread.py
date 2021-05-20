@@ -36,7 +36,7 @@ class SeparateCycleProcessCommandThread(SeparateCycleThread):
             self.analise_command_output(iteration, line)
         return False
 
-    def run_command_and_get_output(self, cmd, index):
+    def run_command_and_get_output(self, cmd, index, clear_lines=True):
         start_shell = self.config.get('start_shell', False)
 
         if os.name == 'nt':
@@ -59,7 +59,12 @@ class SeparateCycleProcessCommandThread(SeparateCycleThread):
             while self.worked and self.process.poll() is None:
                 text = self.process.stdout.readline()
                 if text:
-                    yield text
+                    if clear_lines:
+                        text = text.strip()
+                        if text:
+                            yield text
+                    else:
+                        yield text
         except Exception as e:
             self.process = None
             self.status = f'ERROR {e} on plot {self.current}'

@@ -5,7 +5,7 @@
 <div class="row flex-wrap mt-5">
     <div class="col-12 card">
         <div class="card-title text-center row">
-            <h5 class="text-center col-8">Состояние системы</h5>
+            <h5 class="text-center col-8">Состояние системы Синх={{sync_status}} {{sync_height}}</h5>
             <a class="col-4 btn button btn-dark" href="/wallet">Обновить</a>
         </div>
     </div>
@@ -13,6 +13,17 @@
         <div class="card-title align-center align-content-center"><h4 class="">Информация о кошельке</h4></div>
         <div class="card-body">
             {% for k,v in wallet.items() %}
+            <div class="row">
+                <div class="col-6">{{k}}</div>
+                <div class="col-6">{{v}}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="card m-1">
+        <div class="card-title align-center align-content-center"><h4 class="">Информация о Ферме</h4></div>
+        <div class="card-body">
+            {% for k,v in farm_info.items() %}
             <div class="row">
                 <div class="col-6">{{k}}</div>
                 <div class="col-6">{{v}}</div>

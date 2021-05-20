@@ -113,7 +113,7 @@ class SeparateCycleThread(Thread):
     def get_statistics(self):
         now = datetime.now()
         work_time = now - self.start_process_time
-        speed = work_time / self.current_iteration - 1 if self.current_iteration > 1 else self.last_iteration_time
+        speed = (work_time / (self.current_iteration - 1)) if self.current_iteration > 1 else self.last_iteration_time
         return {
             'now': now,
             'current': self.current_iteration,

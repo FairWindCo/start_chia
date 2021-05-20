@@ -107,4 +107,7 @@ class ChieThread(SeparateCycleProcessCommandThread, LogInterface):
                 self.phase_stat[name] = statistics
                 self.end_phase_info = f'Фаза {result.group(1)} - \
                 завершина за {minutes} мин CPU {result.group(3)}% [{result.group(4)}]'
+            else:
+                if output_string.find('ERROR'):
+                    self.set_status(output_string)
 

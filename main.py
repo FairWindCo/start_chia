@@ -206,7 +206,10 @@ async def logout(request):
 
 @app.route('/wallet')
 async def get_wallet(request):
-    return jinja.render('wallet.html', request, wallet=app.ctx.processor.info.wallet_info)
+    return jinja.render('wallet.html', request, wallet=app.ctx.processor.info.wallet_info,
+                        farm_info=app.ctx.processor.info.farm_info,
+                        sync_status=app.ctx.processor.info.global_sync,
+                        sync_height=app.ctx.processor.info.global_height)
 
 
 @app.route('/control')

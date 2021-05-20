@@ -1,3 +1,4 @@
+import random
 import sys
 import time
 from random import randint
@@ -56,3 +57,42 @@ if __name__ == '__main__':
         for line in text:
             print(line)
         sleep_this(5)
+    elif 'show' in sys.argv:
+        if '-c' in sys.argv:
+            text = [
+                'Connections:',
+                'Type         IP             Ports             NodeID   Last Connect            MiB  Up|Dwn',
+                'FULL_NODE  192.168.1.175  8444/8444        439bec42...      May 20 10: 46:17    0.0|0.0'
+                '                             - SB      Height: 307608 - Hash: bcbc5833...'
+            ]
+            for line in text:
+                print(line)
+            sleep_this(2)
+        elif '-s' in sys.argv:
+            text = [
+                'Current Blockchain Status: Not Synced. Peak height: 295099',
+                '      Time: Mon May 17 2021 17:06:17 Ôèíëÿíäèÿ (ëåòî)                  Height:     295099',
+                '',
+                'Estimated network space: 5.988 EiB',
+                'Current VDF sub_slot_iters: 114294784',
+                'Total iterations since the start of the blockchain: 953377155836',
+                '  Height: |   Hash:',
+                '   295099 | 4a2fb2cf33fb28cdb80926154883166d2058573ae73647179704787695f95c86',
+                '   295093 | 4a2fb2cf33fb28cdb80926154883166d2058573ae73647179704787695f95c86',
+                '   465466 | 4a2fb2cf33fb28cdb80926154883166d2058573ae73647179704787695f95c86',
+                '   295299 | 4a2fb2cf33fb28cdb80926154883166d2058573ae73647179704787695f95c86',
+                '   295294 | 4a2fb2cf33fb28cdb80926154883166d2058573ae73647179704787695f95c86',
+                '   295396 | 4a2fb2cf33fb28cdb80926154883166d2058573ae73647179704787695f95c86',
+                '   295498 | 4a2fb2cf33fb28cdb80926154883166d2058573ae73647179704787695f95c86',
+                '   295099 | 4a2fb2cf33fb28cdb80926154883166d2058573ae73647179704787695f95c86',
+            ]
+            for line in text:
+                print(line)
+            sleep_this(2)
+        elif '-a' in sys.argv:
+            text = ['Connecting to 192.168.1.107, 8444']
+            for line in text:
+                print(line)
+            if random.randint(0, 1) == 1:
+                print('Failed to connect to 192.168.1.107:8444')
+            sleep_this(2)
