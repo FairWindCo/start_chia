@@ -1,5 +1,6 @@
 import os
 import sys
+from asyncio import Queue
 from collections import deque
 from pathlib import Path
 
@@ -13,6 +14,8 @@ from sanic_session import Session
 
 from chia_thread_config import get_hash
 from main_thread import MainThread
+from telethon import TelegramClient
+from utility.telegram_message import run_send_message_to_clients, send_message_to_clients
 
 
 def get_current_path(*relative_path):
@@ -232,13 +235,38 @@ async def modify_count(request, index: int):
         if request.method == 'POST':
             try:
                 new_count = int(request.form.get('count', thread_info.last))
+                new_temp = request.form.get('temp_path', '')
+                new_work = request.form.get('work_path', '')
+                if new_temp and os.path.exists(new_temp):
+                    thread_info.config['temp_dir'] = new_temp
+                if new_work and os.path.exists(new_work):
+                    thread_info.config['work_dir'] = new_work
                 thread_info.last = new_count
             except ValueError as e:
                 message = e
         return jinja.render('modify.html', request, name=thread_info.name, count_task=thread_info.last,
-                            current_task=thread_info.current_iteration, message=message)
+                            current_task=thread_info.current_iteration, message=message,
+                            work_path=thread_info.config['work_dir'], temp_path=thread_info.config['temp_dir']
+                            )
     else:
         abort(404)
+
+
+async def telegram_bot():
+    main_processor = app.ctx.processor
+    api_id = main_processor.main_config.get('api_id')
+    api_hash = main_processor.main_config.get('api_hash')
+    send_to = main_processor.main_config.get('send_to', '').split(',')
+
+    if api_id and api_hash and send_to:
+        query = Queue()
+        app.ctx.message_stack = query
+        client = TelegramClient('anon', api_id, api_hash)
+        while main_processor.web_server_running:
+            message = await query.get()
+            await client.connect()
+            await send_message_to_clients(client, send_to, message)
+            query.task_done()
 
 
 if __name__ == '__main__':
@@ -246,6 +274,7 @@ if __name__ == '__main__':
     app.ctx.processor = processor
     app.ctx.jinja = jinja
     processor.start()
+    app.add_task(telegram_bot)
     try:
         app.static('/assert', get_current_path('assert'))
         try:

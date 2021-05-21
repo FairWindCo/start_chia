@@ -3,6 +3,7 @@ import os
 import re
 from datetime import datetime, timedelta
 from pathlib import Path
+
 from utility.LogInterface import LogInterface
 from utility.SeparateSubprocessThread import SeparateCycleProcessCommandThread
 
@@ -11,16 +12,43 @@ ex_data = re.compile(r'\s*(.*)\s+([A-Z][a-z]{2,4}\s+[A-Z][a-z]{2,10}\s+\d{1,2}\s
 matching_time = re.compile(r'Time for phase ([0-9]+) = ([0-9.]+) seconds. CPU \(([0-9.]+)%\) ([\w\d\s:]*)$')
 
 
+def convert_param_to_attribute(key, value):
+    if key == 'thread_per_plot' and value:
+        return f'-r {value}'
+    if key == 'temp_dir' and value:
+        return f'-t {value}'
+    if key == 'work_dir' and value:
+        return f'-d {value}'
+    if key == 'memory' and value:
+        return f'-b {value}'
+    if key == 'bucket' and value:
+        return f'-u {value}'
+    if key == 'k_size' and value:
+        return f'-r {value}'
+    if key == 'bitfield_disable' and (value == 'True' or value == 'true'):
+        return f'-e'
+    if key == 'fingerprint' and value:
+        return f'-a {value}'
+    if key == 'pool_pub_key' and value:
+        return f'-p {value}'
+    if key == 'farmer_pub_key' and value:
+        return f'-f {value}'
+    return ''
+
+
+def get_command_args(config_dict):
+    args = [convert_param_to_attribute(key, val) for key, val in config_dict.items()]
+    command = config_dict['chia_path']
+    return f'{command} plots create {" ".join(args)}'
+
+
 class ChieThread(SeparateCycleProcessCommandThread, LogInterface):
-    def __init__(self, name, file, cmd, start_index, last, temp_dir, config_for_thread):
-        self.config = config_for_thread
-        pause = float(self.config.get('pause_before_start', 0))
-        super().__init__(name=name, cmd=cmd, config=config_for_thread, before_start_pause=pause,
-                         start_iteration_number=start_index)
+    def __init__(self, name, start_index, last, config_for_thread):
+        pause = float(config_for_thread.get('pause_before_start', 0))
+        super().__init__(config_for_thread, pause, 0, name, False, start_iteration_number=start_index)
         self.pause_once = True
-        self.file = file
+        self.file = name
         self.last = last
-        self.temp_dir = temp_dir
         self.phase = 'ИНИЦИАЛИЗАЦИЯ'
         self.plot_created = 0
         self.ave_time = 0
@@ -31,6 +59,10 @@ class ChieThread(SeparateCycleProcessCommandThread, LogInterface):
     def on_end_iteration(self, index):
         with open(self.file, 'wt') as file:
             file.write(f'{index}')
+
+    def on_start_iteration(self, index):
+        cmd = get_command_args(self.config)
+        self.config['cmd'] = cmd
 
     def on_start_thread(self):
         self.clear_temp()
@@ -58,7 +90,8 @@ class ChieThread(SeparateCycleProcessCommandThread, LogInterface):
 
     def clear_temp(self):
         self.write_log('CLEAR TEMP')
-        files = Path(self.temp_dir).glob('*.tmp')
+        temp_dir = self.config.get('temp_dir')
+        files = Path(temp_dir).glob('*.tmp')
         for f in files:
             try:
                 f.unlink()
@@ -110,4 +143,3 @@ class ChieThread(SeparateCycleProcessCommandThread, LogInterface):
             else:
                 if output_string.find('ERROR'):
                     self.set_status(output_string)
-

@@ -20,19 +20,19 @@ def get_command_for_execute_with_shell(cmd, config):
 class SeparateCycleProcessCommandThread(SeparateCycleThread):
     process = None
 
-    def __init__(self, cmd, config: dict, before_start_pause: float = 0, inter_iteration_pause: float = 0,
+    def __init__(self, config: dict, before_start_pause: float = 0, inter_iteration_pause: float = 0,
                  name: str = 'SeparateCycleProcessCommandThread',
                  demon=None,
-                 start_iteration_number: int = 0, pause_before: bool = True) -> None:
+                 start_iteration_number: int = 0, pause_before: bool = True,
+                 ) -> None:
         super().__init__(before_start_pause, inter_iteration_pause, name, demon, start_iteration_number, pause_before)
         self.config = config
-        self.cmd = cmd
 
     def analise_command_output(self, iteration_index, output_string, err=False):
         pass
 
     def work_procedure(self, iteration) -> bool:
-        for line in self.run_command_and_get_output(self.cmd, iteration):
+        for line in self.run_command_and_get_output(self.config['cmd'], iteration):
             self.analise_command_output(iteration, line)
         return False
 
@@ -67,7 +67,7 @@ class SeparateCycleProcessCommandThread(SeparateCycleThread):
                         yield text
         except Exception as e:
             self.process = None
-            self.status = f'ERROR {e} on plot {self.current}'
+            self.status = f'ERROR {e} on plot {self.current_iteration}'
             self.analise_command_output(index, str(e), True)
 
     def shutdown(self):

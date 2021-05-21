@@ -109,6 +109,7 @@ class SeparateCycleThread(Thread):
 
     def wakeup(self):
         self.event.set()
+        self.set_status('RESUME')
 
     def get_statistics(self):
         now = datetime.now()

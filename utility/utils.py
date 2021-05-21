@@ -65,35 +65,6 @@ def read_params_from_section(config_, section, default=None, copy_list_name: [st
     return default
 
 
-def convert_param_to_attribute(key, value):
-    if key == 'thread_per_plot' and value:
-        return f'-r {value}'
-    if key == 'temp_dir' and value:
-        return f'-t {value}'
-    if key == 'work_dir' and value:
-        return f'-d {value}'
-    if key == 'memory' and value:
-        return f'-b {value}'
-    if key == 'bucket' and value:
-        return f'-u {value}'
-    if key == 'k_size' and value:
-        return f'-r {value}'
-    if key == 'bitfield_disable' and (value == 'True' or value == 'true'):
-        return f'-e'
-    if key == 'fingerprint' and value:
-        return f'-a {value}'
-    if key == 'pool_pub_key' and value:
-        return f'-p {value}'
-    if key == 'farmer_pub_key' and value:
-        return f'-f {value}'
-    return ''
-
-
-def get_command_args(config_dict):
-    args = [convert_param_to_attribute(key, val) for key, val in config_dict.items()]
-    command = config_dict['chia_path']
-    return f'{command} plots create {" ".join(args)}'
-
 
 def calc_wakeup_time(pause: float):
     return (datetime.now() + timedelta(seconds=pause)).strftime('%d.%m.%Y %H:%M:%S')

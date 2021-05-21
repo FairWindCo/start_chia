@@ -135,6 +135,7 @@ class MainThread(Thread):
             return None
 
     def stop_all(self):
+        self.web_server_running = False
         self.main_config['auto_restart'] = False
         self.kill_all()
         return 'КОМАНДА ОСТАНОВКИ ПРОГРАММЫ (завершение в течении 1 минуту)'
@@ -176,8 +177,8 @@ class MainThread(Thread):
                                f'{(di[1].total / GIGABYTE):.2f}Гб'
                                for di in disk_info_data])
         context = '\n'.join(
-            [f'{i:2d}.ПОТОК {thread.name} {thread.current}/{thread.last} \
-                ФАЗА {thread.phase} ПЛОТ ЗА {thread.last_time}'
+            [f'{i:2d}.ПОТОК {thread.name} {thread.current_iteration}/{thread.last} \
+                ФАЗА {thread.phase} ПЛОТ ЗА {thread.last_iteration_time}'
              for i, thread in
              enumerate(self.threads)])
         message = f'{now}\nИнформция о дисках\n{disk_info}\n{context}'

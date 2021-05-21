@@ -7,8 +7,15 @@
         <h2>Изменение задания {{name}}</h2>
         <h5 class="text-center">Выполнено {{current_task}} из {{count_task}}</h5>
         <form action="" method="POST" class="row justify-content-center align-items-center">
-            <input type="number" class="col-8 username" id="name" name="count"
+            <span class="col-3">TASK</span>
+            <input type="number" class="col-8 m-1 username" id="count" name="count"
                    placeholder="plot task count" value="{{count_task}}">
+            <span class="col-3">TEMP</span>
+            <input type="text" class="col-8 m-1 username" id="temp_path" name="temp_path"
+                   placeholder="plot task count" value="{{temp_path}}">
+            <span class="col-3">WORK</span>
+            <input type="text" class="col-8 m-1 username" id="work_path" name="work_path"
+                   placeholder="plot task count" value="{{work_path}}">
             <input class="col-4 m-3 btn button btn-info" id="submit" name="submit" type="submit" value="Save">
             <a class="col-4 m-3 btn button btn-info" href="/control">ВЫХОД</a>
         </form>

@@ -2,6 +2,7 @@ import re
 
 import requests as requests
 from bs4 import BeautifulSoup
+from sanic import Sanic
 
 from utility.SeparateSubprocessThread import SeparateCycleProcessCommandThread
 from utility.utils import check_bool
@@ -26,14 +27,19 @@ class InfoThread(SeparateCycleProcessCommandThread):
         self.search_nodes_site = self.main_processor.main_config.get('search_nodes_site', '')
         self.search_nodes = check_bool(self.main_processor.main_config.get('search_nodes', 'true'))
 
-        super().__init__(self.chia_exe, self.main_processor.main_config, name='Information Thread',
+        super().__init__(self.main_processor.main_config, name='Information Thread',
                          inter_iteration_pause=sleep_time, pause_before=False)
         self.wallet_info = {}
         self.farm_info = {}
         self.global_sync = False
         self.global_height = 0
 
+    def on_start_thread(self):
+        super().on_start_thread()
+        self.app = Sanic.get_app()
+
     def work_procedure(self, iteration) -> bool:
+        temp_global_sync = self.global_sync
         for line in self.run_command_and_get_output(f'{self.chia_exe} wallet show', iteration):
             if line.startswith('Connection error.'):
                 self.wallet_info['error'] = line
@@ -93,6 +99,8 @@ class InfoThread(SeparateCycleProcessCommandThread):
                 nodes = self.get_nodes_from_site(self.search_nodes_site)
                 for node in nodes:
                     self.connect_node(node, iteration)
+        if temp_global_sync != self.global_sync:
+            self.app.ctx.message_stack.put_nowait(f'SYNC STATUS CHANGE {self.global_sync}')
         return False
 
     def connect_node(self, node, iteration_index):
