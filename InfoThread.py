@@ -79,7 +79,11 @@ class InfoThread(SeparateCycleProcessCommandThread):
             if clear_text.startswith('Current Blockchain Status'):
                 ln = len('Current Blockchain Status')
                 sub_text = clear_text[ln + 1:]
-                status, peak = sub_text.split('.')
+                values = sub_text.split('.')
+                if len(values) == 2:
+                    status, peak = values
+                else:
+                    status = values[0]
                 self.farm_info['Current Blockchain Status'] = status
                 if status.strip().startswith('Sync'):
                     self.global_sync = True
