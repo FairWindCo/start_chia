@@ -31,12 +31,11 @@ class InfoThread(SeparateCycleProcessCommandThread):
                          inter_iteration_pause=sleep_time, pause_before=False)
         self.wallet_info = {}
         self.farm_info = {}
-        self.global_sync = False
+        self.global_sync = None
         self.global_height = 0
 
     def on_start_thread(self):
         super().on_start_thread()
-        self.app = Sanic.get_app()
 
     def work_procedure(self, iteration) -> bool:
         temp_global_sync = self.global_sync
@@ -69,8 +68,16 @@ class InfoThread(SeparateCycleProcessCommandThread):
         for line in self.run_command_and_get_output(f'{self.chia_exe} farm summary', iteration):
             if line.startswith('Connection error.'):
                 self.wallet_info['error'] = line
+            elif line.startswith('Farming status:'):
+                self.wallet_info['Farming status'] = line[15:].strip()
+                if self.wallet_info['Farming status'] == 'Farming':
+                    self.global_sync = True
+                else:
+                    self.global_sync = False
+
             elif res := farm_sync_reg.search(line):
                 self.wallet_info[res.group(1)] = res.group(2)
+        self.wallet_info['update time'] = self.start_iteration_time
         for line in self.run_command_and_get_output(f'{self.chia_exe} show -s', iteration):
             if line.startswith('Connection error.'):
                 self.farm_info['error'] = line
@@ -85,7 +92,7 @@ class InfoThread(SeparateCycleProcessCommandThread):
                 else:
                     status = values[0]
                 self.farm_info['Current Blockchain Status'] = status
-                if status.strip().startswith('Sync'):
+                if status.strip() == 'Synced':
                     self.global_sync = True
                 else:
                     self.global_sync = False
@@ -103,8 +110,8 @@ class InfoThread(SeparateCycleProcessCommandThread):
                 nodes = self.get_nodes_from_site(self.search_nodes_site)
                 for node in nodes:
                     self.connect_node(node, iteration)
-        if temp_global_sync != self.global_sync:
-            self.app.ctx.message_stack.put_nowait(f'SYNC STATUS CHANGE {self.global_sync}')
+        if temp_global_sync != self.global_sync or temp_global_sync is None:
+            self.main_processor.messager.send_message(f'SYNC STATUS CHANGE {self.global_sync}')
         return False
 
     def connect_node(self, node, iteration_index):

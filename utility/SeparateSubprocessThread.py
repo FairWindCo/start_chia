@@ -18,7 +18,6 @@ def get_command_for_execute_with_shell(cmd, config):
 
 
 class SeparateCycleProcessCommandThread(SeparateCycleThread):
-    process = None
 
     def __init__(self, config: dict, before_start_pause: float = 0, inter_iteration_pause: float = 0,
                  name: str = 'SeparateCycleProcessCommandThread',
@@ -27,6 +26,7 @@ class SeparateCycleProcessCommandThread(SeparateCycleThread):
                  ) -> None:
         super().__init__(before_start_pause, inter_iteration_pause, name, demon, start_iteration_number, pause_before)
         self.config = config
+        self.process = None
 
     def analise_command_output(self, iteration_index, output_string, err=False):
         pass
@@ -56,7 +56,7 @@ class SeparateCycleProcessCommandThread(SeparateCycleThread):
                                             shell=start_shell, encoding=code_page,
                                             universal_newlines=True)
 
-            while self.worked and self.process.poll() is None:
+            while self.worked and self.process and self.process.poll() is None:
                 text = self.process.stdout.readline()
                 if text:
                     if clear_lines:
@@ -65,9 +65,14 @@ class SeparateCycleProcessCommandThread(SeparateCycleThread):
                             yield text
                     else:
                         yield text
-        except Exception as e:
+        except subprocess.CalledProcessError as e:
+            self.set_status(f'ERROR {e} on plot {self.current_iteration}')
             self.process = None
-            self.status = f'ERROR {e} on plot {self.current_iteration}'
+        except ValueError as e:
+            self.set_status(f'ERROR {e} on plot {self.current_iteration}')
+            self.process = None
+        except Exception as e:
+            self.set_status(f'ERROR {e} on plot {self.current_iteration}')
             self.analise_command_output(index, str(e), True)
 
     def shutdown(self):
@@ -75,6 +80,7 @@ class SeparateCycleProcessCommandThread(SeparateCycleThread):
         super().shutdown()
 
     def kill_command(self):
+        self.stop()
         if self.process:
             try:
                 process = psutil.Process(self.process.pid)
@@ -89,4 +95,8 @@ class SeparateCycleProcessCommandThread(SeparateCycleThread):
             self.event.wait(1)
             if self.process:
                 self.process.kill()
+                try:
+                    os.kill(self.process.pid, signal.SIGTERM)
+                except Exception:
+                    pass
             self.process = None

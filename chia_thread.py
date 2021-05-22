@@ -45,7 +45,9 @@ def get_command_args(config_dict):
 class ChieThread(SeparateCycleProcessCommandThread, LogInterface):
     def __init__(self, name, start_index, last, config_for_thread):
         pause = float(config_for_thread.get('pause_before_start', 0))
-        super().__init__(config_for_thread, pause, 0, name, False, start_iteration_number=start_index)
+        super().__init__(config_for_thread, pause, 0, name, False,
+                                                          start_iteration_number=start_index)
+        LogInterface.__init__(self, name)
         self.pause_once = True
         self.file = name
         self.last = last
@@ -76,7 +78,7 @@ class ChieThread(SeparateCycleProcessCommandThread, LogInterface):
         try:
             os.remove(self.file)
         except FileNotFoundError:
-            print(f'{self.file} not found')
+            print(f'SAFE ITERATION FILE: {self.file} not found - may be no iteration\n')
         for name, stat in self.phase_stat.items():
             self.write_log(name)
             for k, v in stat.items():
@@ -98,8 +100,12 @@ class ChieThread(SeparateCycleProcessCommandThread, LogInterface):
             except OSError as e:
                 self.write_log(f'ERROR in {f} - {e.strerror} ')
 
+    def set_status(self, text):
+        super().set_status(text)
+        self.write_log(text, need_flush=True)
+
     def analise_command_output(self, iteration_index, output_string, err=False):
-        self.write_log(output_string)
+        self.write_log(output_string, need_flush=True)
         result = matching.search(output_string)
         if result:
             self.phase = result.group(1)

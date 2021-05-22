@@ -19,11 +19,8 @@ class TelegramThread(SeparateCycleThread):
         self.last_plots = 0
 
     def on_start_thread(self):
-        #event_loop_a = asyncio.new_event_loop()
-        #asyncio.set_event_loop(event_loop_a)
         self.last_plots = reduce(lambda _sum, el: el.current_iteration + _sum, self.main_processor.threads, 0)
         self.event.wait(5)
-        self.app = Sanic.get_app()
         super().on_start_thread()
 
     def work_procedure(self, iteration) -> bool:
@@ -48,8 +45,7 @@ class TelegramThread(SeparateCycleThread):
                     Создано {created} за {str(delta)}\n \
                     Скорость плот за {str(speed)} \n\
                     С момента старта создано всего {current}'
-                #run_send_message_to_clients(self.send_to, message, self.api_id, self.api_hash)
-                self.app.ctx.message_stack.put_nowait(message)
+                self.main_processor.messager.send_message(message)
                 self.last_send = now
                 self.last_plots = current
             except Exception as e:

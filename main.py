@@ -1,6 +1,5 @@
 import os
 import sys
-from asyncio import Queue
 from collections import deque
 from pathlib import Path
 
@@ -14,8 +13,7 @@ from sanic_session import Session
 
 from chia_thread_config import get_hash
 from main_thread import MainThread
-from telethon import TelegramClient
-from utility.telegram_message import run_send_message_to_clients, send_message_to_clients
+from utility.telegram_message import run_send_message_to_clients
 
 
 def get_current_path(*relative_path):
@@ -83,7 +81,6 @@ async def view_log(request, name):
         with open(path_to_log_file, 'rt') as file:
             lines = deque(filter(lambda el: el and el[0] not in ['\n', '\r'], file.readlines()), 30)
             lines.reverse()
-            print(lines)
         return jinja.render('lastlog.html', request, lines=lines, name=name)
     else:
         abort(404)
@@ -207,6 +204,15 @@ async def logout(request):
     return response.redirect('/')
 
 
+@app.route('/refresh_wallet')
+async def get_wallet(request):
+    app.ctx.processor.info.wakeup()
+    return jinja.render('wallet.html', request, wallet=app.ctx.processor.info.wallet_info,
+                        farm_info=app.ctx.processor.info.farm_info,
+                        sync_status=app.ctx.processor.info.global_sync,
+                        sync_height=app.ctx.processor.info.global_height)
+
+
 @app.route('/wallet')
 async def get_wallet(request):
     return jinja.render('wallet.html', request, wallet=app.ctx.processor.info.wallet_info,
@@ -252,34 +258,19 @@ async def modify_count(request, index: int):
         abort(404)
 
 
-async def telegram_bot():
-    main_processor = app.ctx.processor
-    api_id = main_processor.main_config.get('api_id')
-    api_hash = main_processor.main_config.get('api_hash')
-    send_to = main_processor.main_config.get('send_to', '').split(',')
-
-    if api_id and api_hash and send_to:
-        query = Queue()
-        app.ctx.message_stack = query
-        client = TelegramClient('anon', api_id, api_hash)
-        while main_processor.web_server_running:
-            message = await query.get()
-            await client.connect()
-            await send_message_to_clients(client, send_to, message)
-            query.task_done()
-
-
 if __name__ == '__main__':
-    processor = MainThread()
-    app.ctx.processor = processor
-    app.ctx.jinja = jinja
-    processor.start()
-    app.add_task(telegram_bot)
-    try:
-        app.static('/assert', get_current_path('assert'))
+    if len(sys.argv) > 1 and sys.argv[1] == 'telegram':
+        run_send_message_to_clients(['me', 'me'], 'TEST', '', '')
+    else:
+        processor = MainThread()
+        app.ctx.processor = processor
+        app.ctx.jinja = jinja
+        processor.start()
         try:
-            app.run('0.0.0.0', 5050)
-        except Exception:
+            app.static('/assert', get_current_path('assert'))
+            try:
+                app.run('0.0.0.0', 5050)
+            except Exception:
+                processor.kill_all()
+        except OSError:
             processor.kill_all()
-    except OSError:
-        processor.kill_all()

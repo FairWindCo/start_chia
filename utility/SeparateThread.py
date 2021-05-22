@@ -8,16 +8,6 @@ def calc_wakeup_time(pause: float):
 
 
 class SeparateCycleThread(Thread):
-    worked = False
-    stop_iteration_flag = False
-    start_process_time = None
-    start_iteration_time = None
-    current_iteration = 0
-    status = 'INIT'
-    speed = timedelta(seconds=0)
-    thread_paused = False
-    last_iteration_time = timedelta(seconds=0)
-    pause_once = False
 
     def __init__(self, before_start_pause: float = 0, inter_iteration_pause: float = 0, name: str = 'SeparateThread',
                  demon=None,
@@ -28,6 +18,16 @@ class SeparateCycleThread(Thread):
         self.inter_iteration_pause = inter_iteration_pause
         self.pause_before = pause_before
         self.before_start_pause = before_start_pause
+        self.worked = False
+        self.stop_iteration_flag = False
+        self.start_process_time = None
+        self.start_iteration_time = None
+        self.current_iteration = 0
+        self.status = 'INIT'
+        self.speed = timedelta(seconds=0)
+        self.thread_paused = False
+        self.last_iteration_time = timedelta(seconds=0)
+        self.pause_once = False
 
     def on_start_thread(self):
         pass
@@ -59,7 +59,7 @@ class SeparateCycleThread(Thread):
             self.current_iteration = iteration_index
             if self.check_skip_iteration(iteration_index):
                 continue
-            if self.check_stop_iteration(iteration_index):
+            if self.check_stop_iteration(iteration_index) or self.stop_iteration_flag:
                 break
             self.on_start_iteration(iteration_index)
             if self.pause_before and self.inter_iteration_pause > 0:
@@ -68,7 +68,11 @@ class SeparateCycleThread(Thread):
                     self.inter_iteration_pause = 0
             self.set_status(f'START ITERATION {iteration_index}')
             self.start_iteration_time = datetime.now()
-            need_break = self.work_procedure(iteration_index)
+            try:
+                need_break = self.work_procedure(iteration_index)
+            except Exception as e:
+                # DON`T ABORT THREAD ON EXCEPTION
+                self.set_status(str(e))
             self.last_iteration_time = datetime.now() - self.start_iteration_time
             self.on_end_iteration(iteration_index)
             if need_break:
@@ -101,8 +105,8 @@ class SeparateCycleThread(Thread):
         self.stop_iteration_flag = True
 
     def shutdown(self):
-        self.stop_iteration_flag = True
-        self.event.set()
+        self.stop()
+        self.wakeup()
 
     def get_state(self):
         return self.worked

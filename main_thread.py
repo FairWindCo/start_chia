@@ -5,6 +5,7 @@ from threading import Thread, Event
 import psutil
 
 from InfoThread import InfoThread
+from TelegramSenderThread import TelegramSenderThread
 from TelegramThread import TelegramThread
 from chia_thread_config import get_threads_configs, ChieThreadConfig
 from utility.SeparateSubprocessThread import get_command_for_execute_with_shell
@@ -62,11 +63,14 @@ class MainThread(Thread):
                     shell=shelling)
         self.info = InfoThread(self)
         self.telegram = TelegramThread(self)
+        self.messager = TelegramSenderThread(self)
 
         self.info.start()
         self.telegram.start()
+        self.messager.start()
         while self.web_server_running:
             if self.need_start() and self.web_server_running:
+                print('START POOL')
                 self.init_thread()
                 self.start_workers()
             else:
@@ -79,6 +83,7 @@ class MainThread(Thread):
                     break
         self.info.shutdown()
         self.telegram.shutdown()
+        self.messager.shutdown()
         print(f'{self.name} - shutdown')
 
     def kill_all(self):
