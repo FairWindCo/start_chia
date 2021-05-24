@@ -38,18 +38,21 @@ class SeparateCycleProcessCommandThread(SeparateCycleThread):
 
     def run_command_and_get_output(self, cmd, index, clear_lines=True):
         start_shell = self.config.get('start_shell', False)
-
-        if os.name == 'nt':
-            if start_shell:
-                code_page = 'cp866'
+        shelling_info = check_bool(self.config.get('p_open_shell', False))
+        code_page = self.config.get('code_page', '')
+        if not code_page:
+            if os.name == 'nt' and shelling_info:
+                if start_shell:
+                    code_page = 'cp866'
+                else:
+                    code_page = 'cp1251'
             else:
-                code_page = 'cp1251'
-        else:
-            code_page = self.config.get('code_page', 'utf8')
+                code_page = 'utf8'
 
         cmd = get_command_for_execute_with_shell(cmd, self.config)
         try:
             self.status = f'RUN COMMAND'
+            print(f'TRY EXECUTE CMD {cmd} IN THREAD {self.name} with code_page={code_page} shell={start_shell}')
             self.process = subprocess.Popen(cmd,
                                             stderr=subprocess.PIPE,
                                             stdout=subprocess.PIPE,

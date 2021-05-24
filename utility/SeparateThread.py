@@ -72,7 +72,9 @@ class SeparateCycleThread(Thread):
                 need_break = self.work_procedure(iteration_index)
             except Exception as e:
                 # DON`T ABORT THREAD ON EXCEPTION
+                print(e)
                 self.set_status(str(e))
+                need_break = True
             self.last_iteration_time = datetime.now() - self.start_iteration_time
             self.on_end_iteration(iteration_index)
             if need_break:
