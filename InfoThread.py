@@ -40,6 +40,7 @@ class InfoThread(SeparateCycleThread):
         self.chia_config_path = self.main_processor.main_config.get('chia_config_path', '')
         self.chia_farm_rpc = int(self.main_processor.main_config.get('chia_farm_rpc', 8555))
         self.chia_wallet_rpc = int(self.main_processor.main_config.get('chia_wallet_rpc', 9256))
+        self.chia_harvester_rpc = int(self.main_processor.main_config.get('chia_harvester_rpc', 8560))
         self.chia_farm_host = self.main_processor.main_config.get('chia_farm_host', 'localhost')
 
         self.local_nodes = self.main_processor.main_config.get('local_nodes', '').split(',')
@@ -60,11 +61,12 @@ class InfoThread(SeparateCycleThread):
 
     def work_procedure(self, iteration) -> bool:
         temp_global_sync = self.global_sync
-        self.wallet_info = self.connector.get_status_info() if self.connector else {}
+        self.wallet_info = self.connector.get_status_info(self.chia_farm_rpc, self.chia_wallet_rpc,
+                                                          self.chia_harvester_rpc) if self.connector else {}
 
-        if 'blockchain_state' in self.wallet_info:
-            self.global_height = self.wallet_info['blockchain_state']['peak']['challenge_vdf_output']['height']
-            self.global_sync = self.wallet_info['blockchain_state']['peak']['sync']['synced']
+        if 'blockchain' in self.wallet_info:
+            self.global_height = self.wallet_info['blockchain']['blockchain_state']['peak']['height']
+            self.global_sync = self.wallet_info['blockchain']['blockchain_state']['sync']['synced']
         if 'wallet_sync' in self.wallet_info:
             self.global_sync = self.wallet_info['wallet_sync']['synced'] if self.global_sync is None else (
                     self.global_sync and self.wallet_info['wallet_sync']['synced'])

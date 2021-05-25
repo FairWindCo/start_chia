@@ -84,6 +84,10 @@ info_update_time - refresh interal wallet/farm information
 local_nodes - list full node in form <ip>:<port>, <ip>:<port>    
 search_nodes_site - url with node list, default is "https://chia.keva.app/"
 search_nodes - true/false exec site search 
+chia_config_path - path to chia config dir, if not set program try find himself 
+chia_farm_rpc - rpc tcp port of farm process, default 8555
+chia_wallet_rpc - rpc tcp port of wallet process, default 9256
+chia_farm_host - host of farm and wallet process, default localhost
 ```
 
 ###Task configuration

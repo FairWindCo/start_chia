@@ -1,7 +1,7 @@
 import os
 import ssl
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Optional, Dict, Any, List
 
 import requests
 import urllib3
@@ -75,14 +75,15 @@ class ChiaConnector:
         self.session = requests.Session()
         self.session.mount('https://', self.adapter)
 
-    def info_request(self, path, params=None, port=8555) -> (Dict, int):
+    def info_request(self, path, params=None, port=8555, del_success: bool = True) -> (Dict, int):
         if params is None:
             params = {}
         url = f'https://{self.self_hostname}:{str(port)}/'
         res = self.session.post(url + path, json=params, verify=False)
         if res.status_code == 200:
             response = res.json()
-            del response['success']
+            if del_success:
+                del response['success']
             return response, res.status_code
         else:
             return None, res.status_code
@@ -124,6 +125,32 @@ class ChiaConnector:
             return wallets, 200
         return None, code
 
+    def get_plots(self, port=8560) -> (Dict[str, Any], int):
+        return self.info_request("get_plots", {}, port)
+
+    def refresh_plots(self, port=8560) -> (None, int):
+        return self.info_request("refresh_plots", {}, port)
+
+    def delete_plot(self, filename: str, port=8560) -> (bool, int):
+        return self.info_request("delete_plot", {"filename": filename}, port)
+
+    def add_plot_directory(self, dirname: str, port=8560) -> (bool, int):
+        res_obj, code = self.info_request("add_plot_directory", {"dirname": dirname}, port)
+        if code == 200:
+            return res_obj["success"]
+        else:
+            return False
+
+    def get_plot_directories(self, port=8560) -> (List[str], int):
+        return self.info_request("get_plot_directories", {}, port)
+
+    async def remove_plot_directory(self, dirname: str, port=8560) -> bool:
+        res_obj, code = self.info_request("remove_plot_directory", {"dirname": dirname}, port)
+        if code == 200:
+            return res_obj["success"]
+        else:
+            return False
+
     def add_connection(self, host: str, port: int = 8444, rpc_port=8555):
         res, res_code = self.info_request("open_connection", {"host": host, "port": int(port)}, rpc_port)
         if res_code == 200:
@@ -133,12 +160,13 @@ class ChiaConnector:
         else:
             return False
 
-    def get_status_info(self, farm_rpc_port=8555, wallet_rpc_port=9256):
+    def get_status_info(self, farm_rpc_port=8555, wallet_rpc_port=9256, harvester_rpc=8560):
         blockchain, blockchain_code = self.get_blockchain_state(farm_rpc_port)
         connections, connections_code = self.get_connections(farm_rpc_port)
         wallets, wallets_code = self.get_wallets(wallet_rpc_port)
         farmed_amount, farmed_amount_code = self.get_farmed_amount(wallet_rpc_port)
-
+        plots, plots_code = self.get_plots(harvester_rpc)
+        plot_dirs, dirs_code = self.get_plot_directories(harvester_rpc)
         wallet_sync, wallet_sync_code = self.wallet_sync_status(wallet_rpc_port)
         if wallets_code == 200:
             wallet_balances = [self.get_wallet_balance(wallet["id"]) for wallet in wallets['wallets']]
@@ -152,11 +180,15 @@ class ChiaConnector:
             'farmed_amount': farmed_amount,
             'wallet_sync': wallet_sync,
             'wallet_balances': wallet_balances,
+            'plots': plots,
+            'plot_dirs': plot_dirs,
             '_responses': {
                 'blockchain_code': blockchain_code,
                 'connections_code': connections_code,
                 'wallets_code': wallets_code,
                 'farmed_amount_code': farmed_amount_code,
                 'wallet_sync_code': wallet_sync_code,
+                'plots_code': plots_code,
+                'dirs_code': dirs_code,
             }
         }

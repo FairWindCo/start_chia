@@ -5,7 +5,6 @@ from threading import Thread, Event
 import psutil
 
 from InfoThread import InfoThread
-from InfoThreadConsole import InfoThreadConsoleCmd
 from TelegramSenderThread import TelegramSenderThread
 from TelegramThread import TelegramThread
 from chia_thread_config import get_threads_configs, ChieThreadConfig
@@ -25,6 +24,7 @@ class MainThread(Thread):
         self.event = Event()
         self.info = None
         self.telegram = None
+        self.messager = None
 
     def need_start(self):
         if not self.threads:
@@ -50,7 +50,6 @@ class MainThread(Thread):
 
     def run(self):
         node_start = self.main_config.get('start_node', None)
-        start_chia_info_console_cmd = self.main_config.get('chia_info_console_cmd', False)
         if node_start:
             path = self.main_config['chia_path']
             if path:
@@ -63,10 +62,8 @@ class MainThread(Thread):
                 subprocess.Popen(
                     get_command_for_execute_with_shell(f'{path} start {peer_config}', self.main_config),
                     shell=shelling)
-        if start_chia_info_console_cmd:
-            self.info = InfoThreadConsoleCmd(self)
-        else:
-            self.info = InfoThread(self)
+
+        self.info = InfoThread(self)
         self.telegram = TelegramThread(self)
         self.messager = TelegramSenderThread(self)
 
