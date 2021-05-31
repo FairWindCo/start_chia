@@ -19,44 +19,56 @@
                 Потребление памяти
             </div>
             <div class="col">
-                {{ memory[0]|round(2)  }}Гб/{{ memory[1]|round(2) }}Гб
+                {{ memory[0]|round(2) }}Гб/{{ memory[1]|round(2) }}Гб
             </div>
         </div>
     </div>
     <div class="row flex-column flex-wrap text-center">
-    {% for th in threads %}
-    <div class="col card m-1">
-        <div class="card-title align-center align-content-center"><h6 class="">{{th.name}}</h6></div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-4">ВЫПОЛНЕНО</div>
-                <div class="col-8">{{th.current_iteration}} / {{th.last}}</div>
+        {% for th in threads %}
+        <div class="col m-1 p-2" style="background: white;border-radius: 5px;">
+            <div class="card-title align-center align-content-center"><h6 class="">{{th.name}}</h6>
+            <div class="dropdown">
+                    <button class="btn dropdown-toggle" type="button" id="dropdownMenuButton1"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                        Управление
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                        <li><a class="dropdown-item" href="/lastlog/{{th.name}}">ПОСЛЕДНЕЕ</a></li>
+                        <li><a class="dropdown-item" href="/view_log/{{th.name}}">ЖУРНАЛ</a></li>
+                        <li><a class="dropdown-item" href="/log/{{th.name}}">СКАЧАТЬ ЖУРНАЛ</a></li>
+                        <li><a class="dropdown-item" href="/stop/{{loop.index0}}">ОСТАНОВИТЬ</a></li>
+                        <li><a class="dropdown-item" href="/stop_iteration/{{loop.index0}}">СТОП ИТЕРАЦИИ</a></li>
+                        <li><a class="dropdown-item" href="/modify/{{loop.index0}}">ИЗМЕНИТЬ КОЛИЧЕСТВО</a></li>
+                        <li><a class="dropdown-item" href="/pause/{{loop.index0}}">ПАУЗА</a></li>
+                        <li><a class="dropdown-item" href="/wakeup/{{loop.index0}}">РАЗБУДИТЬ</a></li>
+                        <li><a class="dropdown-item" href="/restart/{{loop.index0}}">РЕСТАРТ</a></li>
+                    </ul>
+                </div>
             </div>
-            <div class="row">
-                <div class="col-4">ТЕКУЩАЯ ФАЗА</div>
-                <div class="col-8">{{th.phase}}</div>
-            </div>
-            <div class="row">
-                <div class="col-4">ВРЕМЯ ПОСЛЕДНЕГО ПЛОТА</div>
-                <div class="col-8">{{th.last_time}}</div>
-            </div>
-            <div class="row">
-                <div class="col-4">СТАТУС</div>
-                <div class="col-8">{{th.status}}</div>
-            </div>
-            <div class="row">
-                <a class="btn btn-info col-4" href="/lastlog/{{th.name}}">ПОСЛЕДНЕЕ</a>
-                <a class="btn btn-info col-3" href="/view_log/{{th.name}}">ЖУРНАЛ</a>
-                <a class="btn btn-info col-3" href="/log/{{th.name}}">СКАЧАТЬ ЖУРНАЛ</a>
-                <a class="btn btn-info col-3" href="/stop/{{loop.index0}}">ОСТАНОВИТЬ</a>
-                <a class="btn btn-info col-3" href="/stop_iteration/{{loop.index0}}">СТОП ИТЕРАЦИИ</a>
-                <a class="btn btn-info col-3" href="/modify/{{loop.index0}}">ИЗМЕНИТЬ КОЛИЧЕСТВО</a>
-                <a class="btn btn-info col-3" href="/pause/{{loop.index0}}">ПАУЗА</a>
-                <a class="btn btn-info col-3" href="/wakeup/{{loop.index0}}">РАЗБУДИТЬ</a>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-4">ВЫПОЛНЕНО</div>
+                    <div class="col-8">{{th.current_iteration}} / {{th.last}}</div>
+                </div>
+                <div class="row">
+                    <div class="col-4">ТЕКУЩАЯ ФАЗА</div>
+                    <div class="col-8">{{th.phase}}</div>
+                </div>
+                <div class="row">
+                    <div class="col-4">ВРЕМЯ ПОСЛЕДНЕГО ПЛОТА</div>
+                    <div class="col-8">{{th.last_time}}</div>
+                </div>
+                <div class="row">
+                    <div class="col-4">СТАТУС</div>
+                    <div class="col-8">{{th.status}}</div>
+                </div>
+                <div class="row">
+                    <div class="col-4"><a class="dropdown-item" href="/stop_iteration/{{loop.index0}}">СТОП ИТЕРАЦИИ</a></div>
+                    <div class="col-8"><a class="dropdown-item" href="/modify/{{loop.index0}}">ИЗМЕНИТЬ КОЛИЧЕСТВО</a></div>
+                </div>
             </div>
         </div>
-    </div>
-    {% endfor %}
+        {% endfor %}
     </div>
 </div>
 

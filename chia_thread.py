@@ -58,6 +58,9 @@ class ChieThread(SeparateCycleProcessCommandThread, LogInterface):
         self.start_phase_info = ''
         self.phase_stat = {}
 
+    def clone(self):
+        return ChieThread(self.name + '-CL', 0, self.last, self.config)
+
     def on_end_iteration(self, index):
         with open(self.file, 'wt') as file:
             file.write(f'{index}')

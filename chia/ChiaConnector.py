@@ -1,5 +1,6 @@
 import os
 import ssl
+from datetime import date, datetime
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 
@@ -7,6 +8,7 @@ import requests
 import urllib3
 from requests.adapters import HTTPAdapter, DEFAULT_POOLSIZE, DEFAULT_RETRIES, DEFAULT_POOLBLOCK
 from urllib3 import poolmanager
+from urllib3.exceptions import NewConnectionError
 
 
 class TLSAdapter(HTTPAdapter):
@@ -79,14 +81,21 @@ class ChiaConnector:
         if params is None:
             params = {}
         url = f'https://{self.self_hostname}:{str(port)}/'
-        res = self.session.post(url + path, json=params, verify=False)
-        if res.status_code == 200:
-            response = res.json()
-            if del_success:
-                del response['success']
-            return response, res.status_code
-        else:
-            return None, res.status_code
+        try:
+            res = self.session.post(url + path, json=params, verify=False)
+            if res.status_code == 200:
+                response = res.json()
+                if del_success:
+                    del response['success']
+                return response, res.status_code
+            else:
+                return None, res.status_code
+        except NewConnectionError:
+            return None, -2
+        except ConnectionError:
+            return None, -1
+        except IOError:
+            return None, -3
 
     def get_connections(self, port=8555) -> (Dict, int):
         return self.info_request('get_connections', {}, port)
@@ -168,12 +177,20 @@ class ChiaConnector:
         plots, plots_code = self.get_plots(harvester_rpc)
         plot_dirs, dirs_code = self.get_plot_directories(harvester_rpc)
         wallet_sync, wallet_sync_code = self.wallet_sync_status(wallet_rpc_port)
+        if plots_code == 200:
+            count_plots = len(plots['plots'])
+            for plot in plots['plots']:
+                plot['file_size'] = plot['file_size'] / 1024 / 1024 / 1024
+                plot['time_modified'] = datetime.fromtimestamp(plot['time_modified'])
+        else:
+            count_plots = 'Не известно'
         if wallets_code == 200:
             wallet_balances = [self.get_wallet_balance(wallet["id"]) for wallet in wallets['wallets']]
         else:
             wallet_balances = []
 
         return {
+            'count_plots': count_plots,
             'blockchain': blockchain,
             'connections': connections,
             'wallets': wallets,

@@ -144,6 +144,13 @@ def wakeup(request, index_element: int):
     return jinja.render('menu.html', request, context=res)
 
 
+@app.route('/restart/<index_element:int>')
+@auth.login_required(handle_no_auth=handle_no_auth)
+def wakeup(request, index_element: int):
+    res = app.ctx.processor.restart_thread(index_element)
+    return jinja.render('menu.html', request, context=res)
+
+
 @app.route('/pause/<index_element:int>', methods=['GET', 'POST'])
 @auth.login_required(handle_no_auth=handle_no_auth)
 def pause(request, index_element: int):

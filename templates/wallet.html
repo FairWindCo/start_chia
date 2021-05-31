@@ -10,7 +10,7 @@
             <a class="col-4 btn button btn-dark" href="/refresh_wallet">ПОЛУЧИТЬ</a>
         </div>
     </div>
-
+    {% if wallet['_responses']['wallets_code'] == 200 %}
     <div class="card m-1">
         <div class="card-title align-center align-content-center"><h4 class="">Информация о кошельках</h4></div>
         <div class="card-body">
@@ -42,7 +42,8 @@
             {% endfor %}
         </div>
     </div>
-
+    {% endif %}
+    {% if wallet['_responses']['farmed_amount_code'] == 200 %}
     <div class="card m-1">
         <div class="card-title align-center align-content-center"><h4 class="">Информация о Майнинге</h4></div>
         <div class="card-body">
@@ -57,20 +58,20 @@
                 <div class="col-3">{{wallet['farmed_amount']['last_height_farmed']}}</div>
                 <div class="col-3">Награда за пулл</div>
                 <div class="col-3">{{wallet['farmed_amount']['pool_reward_amount']}}</div>
+                <div class="col-3">Количество плотов</div>
+                <div class="col-3">{{wallet['count_plots']}}</div>
+
             </div>
-        </div>
-    </div>
-    <div class="card m-1">
-        <div class="card-title align-center align-content-center"><h4 class="">Информация о Майнинге</h4></div>
-        <div class="card-body">
-            {% for k,v in wallet['connections'].items() %}
             <div class="row">
-                <div class="col-6">{{k}}</div>
-                <div class="col-6">{{v}}</div>
+                <h5 class="col-12 center">Каталоги</h5>
+                {% for k in wallet['plot_dirs']['directories'] %}
+                <div class="col-3">{{k}}</div>
+                {% endfor %}
             </div>
-            {% endfor %}
         </div>
     </div>
+    {% endif %}
+    {% if wallet['_responses']['blockchain_code'] == 200 %}
     <div class="card m-1">
         <div class="card-title align-center align-content-center"><h4 class="">Информация о БлокЧейне</h4></div>
         <div class="card-body">
@@ -93,14 +94,18 @@
                 <div class="col-3">Пиковая высота</div>
                 <div class="col-3">{{'%d'|format(wallet['blockchain']['blockchain_state']['peak']['height'])}}</div>
                 <div class="col-3">Итерации VDF суб слота</div>
-                <div class="col-3">{{'%d'|format(wallet['blockchain']['blockchain_state']['peak']['sub_slot_iters'])}}</div>
+                <div class="col-3">{{'%d'|format(wallet['blockchain']['blockchain_state']['peak']['sub_slot_iters'])}}
+                </div>
                 <div class="col-3">Всего итераций</div>
-                <div class="col-3">{{'%d'|format(wallet['blockchain']['blockchain_state']['peak']['total_iters'])}}</div>
+                <div class="col-3">{{'%d'|format(wallet['blockchain']['blockchain_state']['peak']['total_iters'])}}
+                </div>
                 <div class="col-3">Вес</div>
                 <div class="col-3">{{'%d'|format(wallet['blockchain']['blockchain_state']['peak']['weight'])}}</div>
             </div>
         </div>
     </div>
+    {% endif %}
+    {% if wallet['_responses']['plots_code'] == 200 %}
     <div class="card m-1">
         <div class="card-title align-center align-content-center"><h4 class="">Информация о Ферме</h4></div>
         <div class="card-body">
@@ -117,11 +122,11 @@
                 <div class="col-2">{{k['local_port']}}/{{k['peer_port']}}</div>
                 <div class="col-4">{{k['bytes_read']}}/{{k['bytes_written']}}</div>
                 {% if k['type'] == 1 %}
-                    <div class="col-1">Full</div>
+                <div class="col-1">Full</div>
                 {% elif k['type'] == 6 %}
-                    <div class="col-1">Wallet</div>
+                <div class="col-1">Wallet</div>
                 {% elif k['type'] == 3 %}
-                    <div class="col-1">Farmer</div>
+                <div class="col-1">Farmer</div>
                 {% endif %}
                 <div class="col-3">{{k['peak_height']}}/{{k['peak_weight']}}</div>
             </div>
@@ -135,6 +140,48 @@
             {% endfor %}
         </div>
     </div>
+    {% endif %}
+    <div class="card m-1">
+        <div class="card-title align-center align-content-center"><h4 class="">Иномация об ошибках</h4></div>
+        <div class="card-body">
+            {% for k,v in wallet['_responses'].items() %}
+            <div class="row">
+                <div class="col-6">{{k}}</div>
+                {% if v == 200 %}
+                <div class="col-6">ОК</div>
+                {% else %}
+                <div class="col-6">{{v}}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% if wallet['_responses']['plots_code'] == 200 %}
+    <div class="card m-1">
+        <div class="card-title align-center align-content-center"><h4 class="">Информация о Плотах</h4></div>
+        <div class="card-body">
+            {% for v in wallet['plots']['plots'] %}
+            <div class="row">
+                <div class="col-6">{{v['filename']}}</div>
+                <div class="col-2">{{'%.2f'|format(v['file_size'])}}Gb</div>
+                <div class="col-1">{{v['size']}}</div>
+                <div class="col-3">{{v['time_modified']}}</div>
+            </div>
+            {% endfor %}
+            <h5>ОШИБКИ В ПЛОТАХ</h5>
+            {% for v in wallet['plots']['failed_to_open_filenames'] %}
+            <div class="row">
+                <div class="col-6">{{v}}</div>
+            </div>
+            {% endfor %}
+            {% for v in wallet['plots']['not_found_filenames'] %}
+            <div class="row">
+                <div class="col-6">{{v}}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}}
 </div>
 
 {% endblock %}

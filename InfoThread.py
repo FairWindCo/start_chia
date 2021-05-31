@@ -54,22 +54,36 @@ class InfoThread(SeparateCycleThread):
         self.global_sync = None
         self.connector = None
         self.global_height = 0
+        self.work_dirs = []
 
     def on_start_thread(self):
         super().on_start_thread()
         self.connector = ChiaConnector(self.chia_config_path)
+        work_dirs = self.main_processor.get_all_work_dirs()
+        self.work_dirs = work_dirs
+        for work_dir in work_dirs:
+            self.connector.add_plot_directory(work_dir, self.chia_harvester_rpc)
+
+    def add_directory(self, dir_name):
+        if self.connector:
+            self.connector.add_plot_directory(dir_name, self.chia_harvester_rpc)
 
     def work_procedure(self, iteration) -> bool:
         temp_global_sync = self.global_sync
         self.wallet_info = self.connector.get_status_info(self.chia_farm_rpc, self.chia_wallet_rpc,
                                                           self.chia_harvester_rpc) if self.connector else {}
 
-        if 'blockchain' in self.wallet_info:
+        if 'blockchain' in self.wallet_info and self.wallet_info['_responses']['blockchain_code'] == 200:
             self.global_height = self.wallet_info['blockchain']['blockchain_state']['peak']['height']
             self.global_sync = self.wallet_info['blockchain']['blockchain_state']['sync']['synced']
-        if 'wallet_sync' in self.wallet_info:
+        if 'wallet_sync' in self.wallet_info and self.wallet_info['_responses']['wallet_sync_code'] == 200:
             self.global_sync = self.wallet_info['wallet_sync']['synced'] if self.global_sync is None else (
                     self.global_sync and self.wallet_info['wallet_sync']['synced'])
+
+        if self.main_processor.main_config and check_bool(
+                self.main_processor.main_config.get('recheck_work_dir', False), False):
+            for work_dir in self.work_dirs:
+                self.connector.add_plot_directory(work_dir, self.chia_harvester_rpc)
 
         # ADD NODES
         if not self.global_sync:
@@ -87,7 +101,7 @@ class InfoThread(SeparateCycleThread):
         node_address = node.split(':')
         host = node_address[0].strip()
         if len(node_address) > 1:
-            port = node_address[2]
+            port = node_address[1]
         else:
             port = 8444
         if self.connector:

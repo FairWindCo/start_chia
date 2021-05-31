@@ -36,6 +36,9 @@ class MainThread(Thread):
             return True
         return False
 
+    def get_all_work_dirs(self):
+        return list({conf['work_dir'] for conf in self.configs})
+
     def init_thread(self):
         self.threads = [thread for conf in self.configs for thread in ChieThreadConfig(conf).get_threads()]
 
@@ -112,7 +115,9 @@ class MainThread(Thread):
             'memory': (memory.available / GIGABYTE, memory.total / GIGABYTE),
             'disk_info': disk_info,
             'threads': self.threads,
-            'current_time': now
+            'current_time': now,
+            'plots': self.info.wallet_info.get('count_plots', 'UNKNOWN'),
+            'sync': self.info.global_sync,
         }
 
     def show_config(self):
@@ -138,6 +143,17 @@ class MainThread(Thread):
         if 0 <= index_element < len(self.threads):
             self.threads[index_element].need_stop_iteration = True
             return 'THREAD SET STOP ITERATION!'
+        else:
+            return None
+
+    def restart_thread(self, index_element: int):
+        if 0 <= index_element < len(self.threads):
+            if self.threads[index_element].worked:
+                return 'THREAD ALREADY RUNNING!'
+            thread = self.threads[index_element].clone()
+            thread.start()
+            self.threads.append(thread)
+            return 'TRY ADD NEW THREAD !'
         else:
             return None
 
