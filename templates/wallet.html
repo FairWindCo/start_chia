@@ -5,14 +5,134 @@
 <div class="row flex-wrap mt-5">
     <div class="col-12 card">
         <div class="card-title text-center row">
-            <h5 class="text-center col-8">Состояние системы</h5>
+            <h5 class="text-center col-8">Состояние системы Синх={{sync_status}} {{sync_height}}</h5>
             <a class="col-4 btn button btn-dark" href="/wallet">Обновить</a>
+            <a class="col-4 btn button btn-dark" href="/refresh_wallet">ПОЛУЧИТЬ</a>
         </div>
     </div>
+    {% if wallet['_responses']['wallets_code'] == 200 %}
     <div class="card m-1">
-        <div class="card-title align-center align-content-center"><h4 class="">Информация о кошельке</h4></div>
+        <div class="card-title align-center align-content-center"><h4 class="">Информация о кошельках</h4></div>
         <div class="card-body">
-            {% for k,v in wallet.items() %}
+            <div class="row">
+                <div class="col-3">Кошелек синхронизирова</div>
+                <div class="col-3">{{wallet['wallet_sync']['synced']}}</div>
+                <div class="col-3">Идет процесс синхронизации</div>
+                <div class="col-3">{{wallet['wallet_sync']['syncing']}}</div>
+            </div>
+            {% for k,v in wallet['wallet_balances'] %}
+            <div class="row">
+                <div class="col-3">Номер кошелька на хосте</div>
+                <div class="col-3">{{k['wallet_balance']['wallet_id']}}</div>
+                <div class="col-3">Подтвержденный баланс кошелька</div>
+                <div class="col-3">{{'%0.6f'|format(k['wallet_balance']['confirmed_wallet_balance']/10**12)}}</div>
+                <div class="col-3">Расходуемый баланс</div>
+                <div class="col-3">{{'%0.6f'|format(k['wallet_balance']['max_send_amount']/10**12)}}</div>
+                <div class="col-3">Ожидаемый баланс</div>
+                <div class="col-3">{{'%0.6f'|format(k['wallet_balance']['spendable_balance']/10**12)}}</div>
+                <div class="col-3">Не подтвержденный</div>
+                <div class="col-3">{{'%0.6f'|format(k['wallet_balance']['unconfirmed_wallet_balance']/10**12)}}</div>
+                <div class="col-3">unspent_coin_count</div>
+                <div class="col-3">{{'%0.6f'|format(k['wallet_balance']['unspent_coin_count']/10**12)}}</div>
+                <div class="col-3">Баланс в ожидани</div>
+                <div class="col-3">{{'%0.6f'|format(k['wallet_balance']['pending_change']/10**12)}}</div>
+                <div class="col-3">Сдача в ожидании</div>
+                <div class="col-3">{{'%0.6f'|format(k['wallet_balance']['pending_coin_removal_count']/10**12)}}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    {% if wallet['_responses']['farmed_amount_code'] == 200 %}
+    <div class="card m-1">
+        <div class="card-title align-center align-content-center"><h4 class="">Информация о Майнинге</h4></div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-3">XCH Всего Чиа выращено</div>
+                <div class="col-3">{{wallet['farmed_amount']['farmed_amount']}}</div>
+                <div class="col-3">XCH Награда за блок</div>
+                <div class="col-3">{{wallet['farmed_amount']['farmer_reward_amount']}}</div>
+                <div class="col-3">XCH Комиссия за транзакции пользователей</div>
+                <div class="col-3">{{wallet['farmed_amount']['fee_amount']}}</div>
+                <div class="col-3">Высота последнего выращенного блока</div>
+                <div class="col-3">{{wallet['farmed_amount']['last_height_farmed']}}</div>
+                <div class="col-3">Награда за пулл</div>
+                <div class="col-3">{{wallet['farmed_amount']['pool_reward_amount']}}</div>
+                <div class="col-3">Количество плотов</div>
+                <div class="col-3">{{wallet['count_plots']}}</div>
+
+            </div>
+            <div class="row">
+                <h5 class="col-12 center">Каталоги</h5>
+                {% for k in wallet['plot_dirs']['directories'] %}
+                <div class="col-3">{{k}}</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% if wallet['_responses']['blockchain_code'] == 200 %}
+    <div class="card m-1">
+        <div class="card-title align-center align-content-center"><h4 class="">Информация о БлокЧейне</h4></div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-3">Сложность</div>
+                <div class="col-3">{{wallet['blockchain']['blockchain_state']['difficulty']}}</div>
+                <div class="col-3">Синхронизирована</div>
+                <div class="col-3">{{wallet['blockchain']['blockchain_state']['sync']['synced']}}</div>
+                <div class="col-3">Идет процесс синхронизации</div>
+                <div class="col-3">{{wallet['blockchain']['blockchain_state']['sync']['sync_mode']}}</div>
+                <div class="col-3">Прогресс синхроизации</div>
+                <div class="col-3">{{wallet['blockchain']['blockchain_state']['sync']['sync_progress_height']}}</div>
+                <div class="col-3">Сихронизировать до</div>
+                <div class="col-3">{{wallet['blockchain']['blockchain_state']['sync']['sync_tip_height']}}</div>
+                <div class="col-3">Итерации под слота</div>
+                <div class="col-3">{{wallet['blockchain']['blockchain_state']['sub_slot_iters']}}</div>
+                <div class="col-3">Пространство</div>
+                <div class="col-3">{{'%.4g'|format(wallet['blockchain']['blockchain_state']['space'])}}</div>
+
+                <div class="col-3">Пиковая высота</div>
+                <div class="col-3">{{'%d'|format(wallet['blockchain']['blockchain_state']['peak']['height'])}}</div>
+                <div class="col-3">Итерации VDF суб слота</div>
+                <div class="col-3">{{'%d'|format(wallet['blockchain']['blockchain_state']['peak']['sub_slot_iters'])}}
+                </div>
+                <div class="col-3">Всего итераций</div>
+                <div class="col-3">{{'%d'|format(wallet['blockchain']['blockchain_state']['peak']['total_iters'])}}
+                </div>
+                <div class="col-3">Вес</div>
+                <div class="col-3">{{'%d'|format(wallet['blockchain']['blockchain_state']['peak']['weight'])}}</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% if wallet['_responses']['plots_code'] == 200 %}
+    <div class="card m-1">
+        <div class="card-title align-center align-content-center"><h4 class="">Информация о Ферме</h4></div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-2">Хост</div>
+                <div class="col-2">Порт лок/уд</div>
+                <div class="col-4">считано/передано</div>
+                <div class="col-1">Тип</div>
+                <div class="col-3">Высота/Важность</div>
+            </div>
+            {% for k in wallet['connections']['connections'] %}
+            <div class="row">
+                <div class="col-2">{{k['peer_host']}}</div>
+                <div class="col-2">{{k['local_port']}}/{{k['peer_port']}}</div>
+                <div class="col-4">{{k['bytes_read']}}/{{k['bytes_written']}}</div>
+                {% if k['type'] == 1 %}
+                <div class="col-1">Full</div>
+                {% elif k['type'] == 6 %}
+                <div class="col-1">Wallet</div>
+                {% elif k['type'] == 3 %}
+                <div class="col-1">Farmer</div>
+                {% endif %}
+                <div class="col-3">{{k['peak_height']}}/{{k['peak_weight']}}</div>
+            </div>
+            {% endfor %}
+
+            {% for k,v in farm_info.items() %}
             <div class="row">
                 <div class="col-6">{{k}}</div>
                 <div class="col-6">{{v}}</div>
@@ -20,6 +140,48 @@
             {% endfor %}
         </div>
     </div>
+    {% endif %}
+    <div class="card m-1">
+        <div class="card-title align-center align-content-center"><h4 class="">Иномация об ошибках</h4></div>
+        <div class="card-body">
+            {% for k,v in wallet['_responses'].items() %}
+            <div class="row">
+                <div class="col-6">{{k}}</div>
+                {% if v == 200 %}
+                <div class="col-6">ОК</div>
+                {% else %}
+                <div class="col-6">{{v}}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% if wallet['_responses']['plots_code'] == 200 %}
+    <div class="card m-1">
+        <div class="card-title align-center align-content-center"><h4 class="">Информация о Плотах</h4></div>
+        <div class="card-body">
+            {% for v in wallet['plots']['plots'] %}
+            <div class="row">
+                <div class="col-6">{{v['filename']}}</div>
+                <div class="col-2">{{'%.2f'|format(v['file_size'])}}Gb</div>
+                <div class="col-1">{{v['size']}}</div>
+                <div class="col-3">{{v['time_modified']}}</div>
+            </div>
+            {% endfor %}
+            <h5>ОШИБКИ В ПЛОТАХ</h5>
+            {% for v in wallet['plots']['failed_to_open_filenames'] %}
+            <div class="row">
+                <div class="col-6">{{v}}</div>
+            </div>
+            {% endfor %}
+            {% for v in wallet['plots']['not_found_filenames'] %}
+            <div class="row">
+                <div class="col-6">{{v}}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}}
 </div>
 
 {% endblock %}

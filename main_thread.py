@@ -5,9 +5,11 @@ from threading import Thread, Event
 import psutil
 
 from InfoThread import InfoThread
+from TelegramSenderThread import TelegramSenderThread
 from TelegramThread import TelegramThread
 from chia_thread_config import get_threads_configs, ChieThreadConfig
-from utils import check_bool, GIGABYTE, get_command_for_execute_with_shell
+from utility.SeparateSubprocessThread import get_command_for_execute_with_shell
+from utility.utils import check_bool, GIGABYTE
 
 
 class MainThread(Thread):
@@ -22,6 +24,7 @@ class MainThread(Thread):
         self.event = Event()
         self.info = None
         self.telegram = None
+        self.messager = None
 
     def need_start(self):
         if not self.threads:
@@ -32,6 +35,9 @@ class MainThread(Thread):
             self.restart_command = False
             return True
         return False
+
+    def get_all_work_dirs(self):
+        return list({conf['work_dir'] for conf in self.configs})
 
     def init_thread(self):
         self.threads = [thread for conf in self.configs for thread in ChieThreadConfig(conf).get_threads()]
@@ -59,13 +65,17 @@ class MainThread(Thread):
                 subprocess.Popen(
                     get_command_for_execute_with_shell(f'{path} start {peer_config}', self.main_config),
                     shell=shelling)
+
         self.info = InfoThread(self)
         self.telegram = TelegramThread(self)
+        self.messager = TelegramSenderThread(self)
 
         self.info.start()
         self.telegram.start()
+        self.messager.start()
         while self.web_server_running:
             if self.need_start() and self.web_server_running:
+                print('START POOL')
                 self.init_thread()
                 self.start_workers()
             else:
@@ -78,13 +88,14 @@ class MainThread(Thread):
                     break
         self.info.shutdown()
         self.telegram.shutdown()
+        self.messager.shutdown()
         print(f'{self.name} - shutdown')
 
     def kill_all(self):
         self.main_config['auto_restart'] = False
         print('!TRY KILL ALL!')
         for thread in self.threads:
-            thread.kill()
+            thread.shutdown()
         self.web_server_running = False
         # os.kill(self.native_id, signal.CTRL_C_EVENT)
         self.event.set()
@@ -104,7 +115,9 @@ class MainThread(Thread):
             'memory': (memory.available / GIGABYTE, memory.total / GIGABYTE),
             'disk_info': disk_info,
             'threads': self.threads,
-            'current_time': now
+            'current_time': now,
+            'plots': self.info.wallet_info.get('count_plots', 'UNKNOWN'),
+            'sync': self.info.global_sync,
         }
 
     def show_config(self):
@@ -133,19 +146,31 @@ class MainThread(Thread):
         else:
             return None
 
+    def restart_thread(self, index_element: int):
+        if 0 <= index_element < len(self.threads):
+            if self.threads[index_element].worked:
+                return 'THREAD ALREADY RUNNING!'
+            thread = self.threads[index_element].clone()
+            thread.start()
+            self.threads.append(thread)
+            return 'TRY ADD NEW THREAD !'
+        else:
+            return None
+
     def stop_all(self):
+        self.web_server_running = False
         self.main_config['auto_restart'] = False
         self.kill_all()
         return 'КОМАНДА ОСТАНОВКИ ПРОГРАММЫ (завершение в течении 1 минуту)'
 
     def kill_threads(self):
         for thread in self.threads:
-            thread.kill()
+            thread.shutdown()
         return 'КОМАНДА НЕМЕДЛЕННОЙ ОСТАНОВКИ ВСЕХ ПОТОКОВ!'
 
     def stop_iteration_all(self):
         for thread in self.threads:
-            thread.need_stop_iteration = True
+            thread.stop()
         return 'КОМАНДА ОСТАНОВКИ ИТЕРАЦИЙ ВСЕХ ПОТОКОВ!'
 
     def restart_all(self):
@@ -175,8 +200,8 @@ class MainThread(Thread):
                                f'{(di[1].total / GIGABYTE):.2f}Гб'
                                for di in disk_info_data])
         context = '\n'.join(
-            [f'{i:2d}.ПОТОК {thread.name} {thread.current}/{thread.last} \
-                ФАЗА {thread.phase} ПЛОТ ЗА {thread.last_time}'
+            [f'{i:2d}.ПОТОК {thread.name} {thread.current_iteration}/{thread.last} \
+                ФАЗА {thread.phase} ПЛОТ ЗА {thread.last_iteration_time}'
              for i, thread in
              enumerate(self.threads)])
         message = f'{now}\nИнформция о дисках\n{disk_info}\n{context}'

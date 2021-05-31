@@ -5,7 +5,7 @@
 <div class="row flex-wrap mt-5">
     <div class="col-12 card">
         <div class="card-title text-center row">
-            <h5 class="text-center col-8">Состояние системы {{current_time}}</h5>
+            <h5 class="text-center col-8">Состояние системы {{current_time}} Синхр:{{sync}} Плоты:{{plots}}</h5>
             <a class="col-4 btn button btn-dark" href="/">Обновить</a>
         </div>
         <div class="row text-center  flex-wrap">
@@ -58,7 +58,7 @@
         <div class="card-body">
             <div class="row">
                 <div class="col-4">ВЫПОЛНЕНО</div>
-                <div class="col-8">{{th.current}} / {{th.last}}</div>
+                <div class="col-8">{{th.current_iteration}} / {{th.last}}</div>
             </div>
             <div class="row">
                 <div class="col-4">ТЕКУЩАЯ ФАЗА</div>

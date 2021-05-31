@@ -30,8 +30,4 @@ def run_send_message_to_client(client_id, message, api_id, api_hash):
 
 
 if __name__ == '__main__':
-    run_send_message_to_clients(['me', 'me'], 'TEST', '','')
-    # with TelegramClient('anon', api_id, api_hash) as client:
-    # client.loop.run_until_complete(process_message(client, '+380937768660', 'Тест Привет!')) # DEFERENT USER
-    # client.loop.run_until_complete(process_message(client, '+380000999999', 'Тест Привет!')) # ERROR
-    #    client.loop.run_until_complete(process_message(client, 'me', 'Тест Привет!'))  # ME
+    run_send_message_to_clients(['me', 'me'], 'TEST', '', '')

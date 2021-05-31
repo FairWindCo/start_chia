@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 from chia_thread import ChieThread
-from utils import read_params_from_section, check_bool, find_chia, get_command_args
+from utility.utils import read_params_from_section, check_bool, find_chia
 
 salt = os.urandom(32)  # Remember this
 
@@ -81,15 +81,9 @@ def get_threads_configs():
     return config_thread, default_config
 
 
-# matching = re.compile(r'Starting phase ([0-9]*/[0-9]*):\s*([A-Z][\w\d\s:\\\-".]+)\.\.\.\s+([A-Z][\w\d\s:]+)$')
-
-# r'Starting phase ([0-9]*\/[0-9]*):\s*(.*)\s+([A-Z][a-z]{2,4}\s+[A-Z][a-z]{2,10}\s+\d{1,2}\s+\d{1,2}:\d{1,2}:\d{1,2}\s+\d{2,4}.*)$')
-
-
 class ChieThreadConfig:
     def __init__(self, config):
         self.config = config
-        self.command = get_command_args(config)
         self.name = config['name']
         self.num_plots = int(config.get('plots_count', 1))
         self.num_parallel = int(config.get('parallel_plot', 1))
@@ -113,9 +107,7 @@ class ChieThreadConfig:
         return 0
 
     def get_threads(self):
-        result = [ChieThread(f'{self.name}-{index_el}', f'{self.name}_{index_el}', self.command, number, self.num_plots,
-                             self.config['temp_dir'], self.config) for
-                  index_el, number in
-                  enumerate(self.process)]
+        result = [ChieThread(f'{self.name}-{index_el}', number, self.num_plots, self.config)
+                  for index_el, number in enumerate(self.process)]
         self.process = [0 for _ in range(self.num_parallel)]
         return result

@@ -13,6 +13,7 @@ from sanic_session import Session
 
 from chia_thread_config import get_hash
 from main_thread import MainThread
+from utility.telegram_message import run_send_message_to_clients
 
 
 def get_current_path(*relative_path):
@@ -80,7 +81,6 @@ async def view_log(request, name):
         with open(path_to_log_file, 'rt') as file:
             lines = deque(filter(lambda el: el and el[0] not in ['\n', '\r'], file.readlines()), 30)
             lines.reverse()
-            print(lines)
         return jinja.render('lastlog.html', request, lines=lines, name=name)
     else:
         abort(404)
@@ -144,6 +144,13 @@ def wakeup(request, index_element: int):
     return jinja.render('menu.html', request, context=res)
 
 
+@app.route('/restart/<index_element:int>')
+@auth.login_required(handle_no_auth=handle_no_auth)
+def wakeup(request, index_element: int):
+    res = app.ctx.processor.restart_thread(index_element)
+    return jinja.render('menu.html', request, context=res)
+
+
 @app.route('/pause/<index_element:int>', methods=['GET', 'POST'])
 @auth.login_required(handle_no_auth=handle_no_auth)
 def pause(request, index_element: int):
@@ -158,7 +165,7 @@ def pause(request, index_element: int):
             return jinja.render('menu.html', request, context=res)
         message = 'ПОТОК УЖЕ НА ПАУЗЕ' if thread_info.thread_paused else ''
         return jinja.render('pause.html', request, name=thread_info.name, count_task=thread_info.last,
-                            current_task=thread_info.current, message=message)
+                            current_task=thread_info.current_iteration, message=message)
     else:
         abort(404)
 
@@ -204,9 +211,21 @@ async def logout(request):
     return response.redirect('/')
 
 
+@app.route('/refresh_wallet')
+async def get_wallet(request):
+    app.ctx.processor.info.wakeup()
+    return jinja.render('wallet.html', request, wallet=app.ctx.processor.info.wallet_info,
+                        farm_info=app.ctx.processor.info.farm_info,
+                        sync_status=app.ctx.processor.info.global_sync,
+                        sync_height=app.ctx.processor.info.global_height)
+
+
 @app.route('/wallet')
 async def get_wallet(request):
-    return jinja.render('wallet.html', request, wallet=app.ctx.processor.info.wallet_info)
+    return jinja.render('wallet.html', request, wallet=app.ctx.processor.info.wallet_info,
+                        farm_info=app.ctx.processor.info.farm_info,
+                        sync_status=app.ctx.processor.info.global_sync,
+                        sync_height=app.ctx.processor.info.global_height)
 
 
 @app.route('/control')
@@ -229,25 +248,36 @@ async def modify_count(request, index: int):
         if request.method == 'POST':
             try:
                 new_count = int(request.form.get('count', thread_info.last))
+                new_temp = request.form.get('temp_path', '')
+                new_work = request.form.get('work_path', '')
+                if new_temp and os.path.exists(new_temp):
+                    thread_info.config['temp_dir'] = new_temp
+                if new_work and os.path.exists(new_work):
+                    thread_info.config['work_dir'] = new_work
                 thread_info.last = new_count
             except ValueError as e:
                 message = e
         return jinja.render('modify.html', request, name=thread_info.name, count_task=thread_info.last,
-                            current_task=thread_info.current, message=message)
+                            current_task=thread_info.current_iteration, message=message,
+                            work_path=thread_info.config['work_dir'], temp_path=thread_info.config['temp_dir']
+                            )
     else:
         abort(404)
 
 
 if __name__ == '__main__':
-    processor = MainThread()
-    app.ctx.processor = processor
-    app.ctx.jinja = jinja
-    processor.start()
-    try:
-        app.static('/assert', get_current_path('assert'))
+    if len(sys.argv) > 1 and sys.argv[1] == 'telegram':
+        run_send_message_to_clients(['me', 'me'], 'TEST', '', '')
+    else:
+        processor = MainThread()
+        app.ctx.processor = processor
+        app.ctx.jinja = jinja
+        processor.start()
         try:
-            app.run('0.0.0.0', 5050)
-        except Exception:
+            app.static('/assert', get_current_path('assert'))
+            try:
+                app.run('0.0.0.0', 5050)
+            except Exception:
+                processor.kill_all()
+        except OSError:
             processor.kill_all()
-    except OSError:
-        processor.kill_all()

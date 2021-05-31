@@ -1,8 +1,11 @@
 import re
-import subprocess
-from threading import Thread, Event
 
-from utils import get_command_for_execute_with_shell
+import requests as requests
+from bs4 import BeautifulSoup
+
+from chia.ChiaConnector import ChiaConnector
+from utility.SeparateThread import SeparateCycleThread
+from utility.utils import check_bool
 
 wallet_height_reg = re.compile(r'Wallet height:\s*(\d*).*')
 wallet_balance_reg = re.compile(r'Total Balance:\s*([\d]*\.[\d]*)\s*xch.*')
@@ -13,63 +16,96 @@ wallet_sync_reg = re.compile(r'Sync status:\s*(.*)')
 farm_sync_reg = re.compile(r'\s*([A-Z][a-z0-9A-Z\s]*):\s*(.*)')
 
 
-class InfoThread(Thread):
+def get_nodes_from_site(site, global_height):
+    result = requests.get(site)
+    if result.status_code == 200:
+        soup = BeautifulSoup(result.content, 'html.parser')
+        if soup:
+            table = soup.find('table')
+            if table:
+                rows = table.find_all('tr')
+                if rows:
+                    res = [row.find_all('td') for row in rows]
+
+                    return [f'{node[0].text}:{node[1].text}' for node in res if
+                            node[2].text[2:-1].isdigit() and global_height <= int(node[2].text[2:-1])]
+    return []
+
+
+class InfoThread(SeparateCycleThread):
+
     def __init__(self, processor):
-        super().__init__(name='Information Thread')
         self.main_processor = processor
-        self.worked = True
-        self.event = Event()
-        self.wallet_info = {}
-
-    def run(self) -> None:
         sleep_time = int(self.main_processor.main_config.get('info_update_time', 600))
-        chia_exe = self.main_processor.main_config.get('chia_path')
-        print(chia_exe)
-        while self.worked:
-            for line in self.run_command_and_get_output(f'{chia_exe} wallet show'):
-                if line.startswith('Connection error.'):
-                    self.wallet_info['error'] = line
-                    break
-                if res := wallet_height_reg.search(line):
-                    if 'error' in self.wallet_info:
-                        del self.wallet_info['error']
-                    self.wallet_info['Wallet height'] = res.group(1)
+        self.chia_config_path = self.main_processor.main_config.get('chia_config_path', '')
+        self.chia_farm_rpc = int(self.main_processor.main_config.get('chia_farm_rpc', 8555))
+        self.chia_wallet_rpc = int(self.main_processor.main_config.get('chia_wallet_rpc', 9256))
+        self.chia_harvester_rpc = int(self.main_processor.main_config.get('chia_harvester_rpc', 8560))
+        self.chia_farm_host = self.main_processor.main_config.get('chia_farm_host', 'localhost')
 
-                elif res := wallet_sync_reg.search(line):
-                    self.wallet_info['Sync status'] = res.group(1)
+        self.local_nodes = self.main_processor.main_config.get('local_nodes', '').split(',')
+        self.search_nodes_site = self.main_processor.main_config.get('search_nodes_site', '')
+        self.search_nodes = check_bool(self.main_processor.main_config.get('search_nodes', 'true'))
 
-                elif res := wallet_balance_reg.search(line):
-                    self.wallet_info['Total Balance'] = res.group(1)
+        super().__init__(name='Information Thread',
+                         inter_iteration_pause=sleep_time, pause_before=False)
+        self.farm_info = {}
+        self.wallet_info = {}
+        self.global_sync = None
+        self.connector = None
+        self.global_height = 0
+        self.work_dirs = []
 
-                elif res := wallet_pending_balance_reg.search(line):
-                    self.wallet_info['Pending Total Balance'] = res.group(1)
+    def on_start_thread(self):
+        super().on_start_thread()
+        self.connector = ChiaConnector(self.chia_config_path)
+        work_dirs = self.main_processor.get_all_work_dirs()
+        self.work_dirs = work_dirs
+        for work_dir in work_dirs:
+            self.connector.add_plot_directory(work_dir, self.chia_harvester_rpc)
 
-                elif res := wallet_spendable_balance_reg.search(line):
-                    self.wallet_info['Spendable'] = res.group(1)
+    def add_directory(self, dir_name):
+        if self.connector:
+            self.connector.add_plot_directory(dir_name, self.chia_harvester_rpc)
 
-            for line in self.run_command_and_get_output(f'{chia_exe} farm summary'):
-                if line.startswith('Connection error.'):
-                    self.wallet_info['error'] = line
-                elif res := farm_sync_reg.search(line):
-                    self.wallet_info[res.group(1)] = res.group(2)
-            self.event.wait(sleep_time)
-        print(f'{self.name} - shutdown')
+    def work_procedure(self, iteration) -> bool:
+        temp_global_sync = self.global_sync
+        self.wallet_info = self.connector.get_status_info(self.chia_farm_rpc, self.chia_wallet_rpc,
+                                                          self.chia_harvester_rpc) if self.connector else {}
 
-    def shutdown(self):
-        self.worked = False
-        self.event.set()
+        if 'blockchain' in self.wallet_info and self.wallet_info['_responses']['blockchain_code'] == 200:
+            self.global_height = self.wallet_info['blockchain']['blockchain_state']['peak']['height']
+            self.global_sync = self.wallet_info['blockchain']['blockchain_state']['sync']['synced']
+        if 'wallet_sync' in self.wallet_info and self.wallet_info['_responses']['wallet_sync_code'] == 200:
+            self.global_sync = self.wallet_info['wallet_sync']['synced'] if self.global_sync is None else (
+                    self.global_sync and self.wallet_info['wallet_sync']['synced'])
 
-    def run_command_and_get_output(self, cmd):
-        start_shell = self.main_processor.main_config.get('start_shell', False)
-        code_page = self.main_processor.main_config.get('code_page', 'utf8')
-        cmd = get_command_for_execute_with_shell(cmd, self.main_processor.main_config)
-        process = subprocess.Popen(cmd,
-                                   stderr=subprocess.PIPE,
-                                   stdout=subprocess.PIPE,
-                                   shell=start_shell, encoding=code_page,
-                                   universal_newlines=True)
+        if self.main_processor.main_config and check_bool(
+                self.main_processor.main_config.get('recheck_work_dir', False), False):
+            for work_dir in self.work_dirs:
+                self.connector.add_plot_directory(work_dir, self.chia_harvester_rpc)
 
-        while self.worked and process.poll() is None:
-            text = process.stdout.readline()
-            if text:
-                yield text
+        # ADD NODES
+        if not self.global_sync:
+            for local_node in self.local_nodes:
+                self.connect_node(local_node)
+            if self.search_nodes_site and self.search_nodes:
+                nodes = get_nodes_from_site(self.search_nodes_site, self.global_height)
+                for node in nodes:
+                    self.connect_node(node)
+        if temp_global_sync != self.global_sync or temp_global_sync is None:
+            self.main_processor.messager.send_message(f'SYNC STATUS CHANGE {self.global_sync}')
+        return False
+
+    def connect_node(self, node):
+        node_address = node.split(':')
+        host = node_address[0].strip()
+        if len(node_address) > 1:
+            port = node_address[1]
+        else:
+            port = 8444
+        if self.connector:
+            res = self.connector.add_connection(host, port)
+            self.farm_info[host] = 'Connected' if res else f'Failed to port {port}'
+            return res
+        return False
