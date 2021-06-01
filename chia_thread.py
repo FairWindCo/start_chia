@@ -124,7 +124,7 @@ class ChieThread(SeparateCycleProcessCommandThread, LogInterface):
                 name = f'Фаза {result.group(1)}'
                 statistics = self.phase_stat.get(name, {
                     'last': (0.0, timedelta(seconds=0)),
-                    'min': (0.0, timedelta(seconds=0)),
+                    'min': (0, timedelta(seconds=0)),
                     'max': (0.0, timedelta(seconds=0)),
                     'avg': (0.0, timedelta(seconds=0)),
                     'count': 0.0,
@@ -142,7 +142,7 @@ class ChieThread(SeparateCycleProcessCommandThread, LogInterface):
                 total = statistics['total'][0]
                 statistics['total'] = (total + seconds, timedelta(seconds=total + seconds))
                 statistics['count'] = (iteration_index + 1)
-                avg = total + seconds / (iteration_index + 1)
+                avg = (total + seconds) / (iteration_index + 1)
                 statistics['avg'] = (avg, timedelta(seconds=avg))
                 statistics['time'] = datetime.now().strftime('%d/%m/%y %H:%M:%S')
 

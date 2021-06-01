@@ -27,6 +27,7 @@ class SeparateCycleThread(Thread):
         self.speed = timedelta(seconds=0)
         self.thread_paused = False
         self.last_iteration_time = timedelta(seconds=0)
+        self.average_iteration_time = timedelta(seconds=0)
         self.pause_once = False
 
     def on_start_thread(self):
@@ -76,6 +77,7 @@ class SeparateCycleThread(Thread):
                 self.set_status(str(e))
                 need_break = True
             self.last_iteration_time = datetime.now() - self.start_iteration_time
+            self.average_iteration_time = self.last_iteration_time / (iteration_index + 1)
             self.on_end_iteration(iteration_index)
             if need_break:
                 break
