@@ -54,6 +54,7 @@ class InfoThread(SeparateCycleThread):
         self.global_sync = None
         self.connector = None
         self.global_height = 0
+        self.balance = None
         self.work_dirs = []
 
     def on_start_thread(self):
@@ -79,6 +80,12 @@ class InfoThread(SeparateCycleThread):
         if 'wallet_sync' in self.wallet_info and self.wallet_info['_responses']['wallet_sync_code'] == 200:
             self.global_sync = self.wallet_info['wallet_sync']['synced'] if self.global_sync is None else (
                     self.global_sync and self.wallet_info['wallet_sync']['synced'])
+
+        if 'wallet_balance' in self.wallet_info and self.wallet_info['_responses']['wallets_code'] == 200:
+            balance = self.wallet_info['wallet_balance']['confirmed_wallet_balance']
+            if balance != self.balance and self.balance is not None:
+                self.main_processor.messager.send_message(f'BALANCE CHANGE {self.global_sync}')
+            self.balance = balance
 
         if self.main_processor.main_config and check_bool(
                 self.main_processor.main_config.get('recheck_work_dir', False), False):
