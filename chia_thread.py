@@ -4,8 +4,11 @@ import re
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import psutil
+
 from utility.LogInterface import LogInterface
 from utility.SeparateSubprocessThread import SeparateCycleProcessCommandThread
+from utility.utils import disk_space, work_free_space
 
 matching = re.compile(r'Starting phase ([0-9]*/[0-9]*):')
 ex_data = re.compile(r'\s*(.*)\s+([A-Z][a-z]{2,4}\s+[A-Z][a-z]{2,10}\s+\d{1,2}\s+\d{1,2}:\d{1,2}:\d{1,2}\s+\d{2,4}.*)$')
@@ -46,7 +49,7 @@ class ChieThread(SeparateCycleProcessCommandThread, LogInterface):
     def __init__(self, name, start_index, last, config_for_thread):
         pause = float(config_for_thread.get('pause_before_start', 0))
         super().__init__(config_for_thread, pause, 0, name, False,
-                                                          start_iteration_number=start_index)
+                         start_iteration_number=start_index)
         LogInterface.__init__(self, name)
         self.pause_once = True
         self.file = name
@@ -57,6 +60,10 @@ class ChieThread(SeparateCycleProcessCommandThread, LogInterface):
         self.end_phase_info = ''
         self.start_phase_info = ''
         self.phase_stat = {}
+
+    @property
+    def work_free_space(self):
+        return work_free_space(self.config['work_dir'])
 
     def clone(self):
         return ChieThread(self.name + '-CL', 0, self.last, self.config)

@@ -1,5 +1,8 @@
+import os
 from datetime import datetime, timedelta
 from pathlib import Path
+
+import psutil
 
 
 def get_html_dict(dict_to_html, title=''):
@@ -65,6 +68,32 @@ def read_params_from_section(config_, section, default=None, copy_list_name: [st
     return default
 
 
-
 def calc_wakeup_time(pause: float):
     return (datetime.now() + timedelta(seconds=pause)).strftime('%d.%m.%Y %H:%M:%S')
+
+
+def disk_space(space: float) -> str:
+    if space < 1024:
+        return str(space)
+    elif space < 1024 ** 2:
+        return '{:.2f}Kb'.format(space / 1024)
+    elif space < 1024 ** 3:
+        return '{:.2f}Mb'.format(space / 1024 ** 2)
+    elif space < 1024 ** 4:
+        return '{:.2f}Gb'.format(space / 1024 ** 3)
+    elif space < 1024 ** 5:
+        return '{:.2f}Tb'.format(space / 1024 ** 4)
+    else:
+        return '{:.2f}Pb'.format(space / 1024 ** 5)
+
+
+def work_free_space(path=None):
+    if path is None:
+        return 'unknown'
+    try:
+        if os.path.exists(path):
+            return disk_space(psutil.disk_usage(path).free)
+        else:
+            return work_free_space(os.path.join(*os.path.split(path)[:-1]))
+    except Exception as e:
+        return 'unknown'
