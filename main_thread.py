@@ -75,9 +75,12 @@ class MainThread(Thread):
         self.messager.start()
         while self.web_server_running:
             if self.need_start() and self.web_server_running:
-                print('START POOL')
                 self.init_thread()
-                self.start_workers()
+                if self.threads:
+                    print('START POOL')
+                    self.start_workers()
+                else:
+                    self.event.wait(60 * 60)
             else:
                 try:
                     if self.web_server_running:
