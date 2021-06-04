@@ -85,7 +85,7 @@ class ChiaConnector:
             res = self.session.post(url + path, json=params, verify=False)
             if res.status_code == 200:
                 response = res.json()
-                if del_success:
+                if del_success and ('success' in response):
                     del response['success']
                 return response, res.status_code
             else:

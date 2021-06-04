@@ -50,7 +50,15 @@ class InfoThread(SeparateCycleThread):
         super().__init__(name='Information Thread',
                          inter_iteration_pause=sleep_time, pause_before=False)
         self.farm_info = {}
-        self.wallet_info = {}
+        self.wallet_info = {'_responses': {
+            'blockchain_code': -100,
+            'connections_code': -100,
+            'wallets_code': -100,
+            'farmed_amount_code': -100,
+            'wallet_sync_code': -100,
+            'plots_code': -100,
+            'dirs_code': -100,
+        }}
         self.global_sync = None
         self.connector = None
         self.global_height = 0
