@@ -146,7 +146,7 @@ class ChiaConnector:
     def add_plot_directory(self, dirname: str, port=8560) -> (bool, int):
         res_obj, code = self.info_request("add_plot_directory", {"dirname": dirname}, port)
         if code == 200:
-            return res_obj["success"]
+            return res_obj["success"] if "success" in res_obj else False
         else:
             return False
 
