@@ -248,6 +248,13 @@ async def modify_count(request, index: int):
         if request.method == 'POST':
             try:
                 new_count = int(request.form.get('count', thread_info.last))
+                new_bucket = int(request.form.get('bucket', thread_info.config['bucket']))
+                new_ksize = int(request.form.get('k_size', thread_info.config['k_size']))
+
+                new_memory = int(request.form.get('memory', thread_info.config['memory']))
+                new_pause = int(request.form.get('pause_before_start', thread_info.config['pause_before_start']))
+                new_thread_per_plot = int(request.form.get('thread_per_plot', thread_info.config['thread_per_plot']))
+                new_parallel_plot = int(request.form.get('parallel_plot', thread_info.config['parallel_plot']))
                 new_temp = request.form.get('temp_path', '')
                 new_work = request.form.get('work_path', '')
                 if new_temp and os.path.exists(new_temp):
@@ -255,11 +262,32 @@ async def modify_count(request, index: int):
                 if new_work and os.path.exists(new_work):
                     thread_info.config['work_dir'] = new_work
                 thread_info.last = new_count
+                thread_info.config['bucket'] = new_bucket
+                thread_info.config['k_size'] = new_ksize
+                thread_info.config['thread_per_plot'] = new_thread_per_plot
+                thread_info.config['parallel_plot'] = new_parallel_plot
+                thread_info.config['memory'] = new_memory
+                thread_info.config['pause_before_start'] = new_pause
+
+                thread_info.config['fingerprint'] = request.form.get('fingerprint', thread_info.config['fingerprint'])
+                thread_info.config['pool_pub_key'] = request.form.get('pool_pub_key',
+                                                                      thread_info.config['pool_pub_key'])
+                thread_info.config['farmer_pub_key'] = request.form.get('farmer_pub_key',
+                                                                        thread_info.config['farmer_pub_key'])
+
             except ValueError as e:
                 message = e
         return jinja.render('modify.html', request, name=thread_info.name, count_task=thread_info.last,
                             current_task=thread_info.current_iteration, message=message,
-                            work_path=thread_info.config['work_dir'], temp_path=thread_info.config['temp_dir']
+                            work_path=thread_info.config['work_dir'], temp_path=thread_info.config['temp_dir'],
+                            bucket=thread_info.config['bucket'], k_size=thread_info.config['k_size'],
+                            thread_per_plot=thread_info.config['thread_per_plot'],
+                            parallel_plot=thread_info.config['parallel_plot'],
+                            pause_before_start=thread_info.config['pause_before_start'],
+                            memory=thread_info.config['memory'],
+                            fingerprint=thread_info.config['fingerprint'],
+                            pool_pub_key=thread_info.config['pool_pub_key'],
+                            farmer_pub_key=thread_info.config['farmer_pub_key'],
                             )
     else:
         abort(404)

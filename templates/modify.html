@@ -16,6 +16,33 @@
             <span class="col-3">WORK</span>
             <input type="text" class="col-8 m-1 username" id="work_path" name="work_path"
                    placeholder="plot task count" value="{{work_path}}">
+                        <span class="col-3">Thread per plot</span>
+            <input type="number" class="col-3 username" id="thread_per_plot" name="thread_per_plot"
+                   placeholder="Threads per plot" value="{{thread_per_plot}}">
+            <span class="col-3">Bucket</span>
+            <input type="number" class="col-3 username" id="bucket" name="bucket"
+                   placeholder="bucket" value="{{bucket}}">
+            <span class="col-3">K-size</span>
+            <input type="number" class="col-3 username" id="k_size" name="k_size"
+                   placeholder="K_Size" value="{{k_size}}">
+            <span class="col-3">Memory</span>
+            <input type="number" class="col-3 username" id="memory" name="memory"
+                   placeholder="memory" value="{{memory}}">
+            <span class="col-3">Pause before start</span>
+            <input type="number" class="col-3 username" id="pause_before_start" name="pause_before_start"
+                   placeholder="Pause before start" value="{{pause_before_start}}">
+            <span class="col-3">Деление процесса</span>
+            <input type="number" class="col-3 username" id="parallel_plot" name="parallel_plot"
+                   placeholder="Разделить процесс" value="{{parallel_plot}}">
+                        <span class="col-3">Fingerprint</span>
+            <input type="text" class="col-8 m-1 username" id="fingerprint" name="fingerprint"
+                   placeholder="fingerprint" value="{{fingerprint|default('', true)}}">
+                        <span class="col-3">Pool public key</span>
+            <input type="text" class="col-8 m-1 username" id="pool_pub_key" name="pool_pub_key"
+                   placeholder="Pool public key" value="{{pool_pub_key|default('', true)}}">
+                        <span class="col-3">Farmer public key</span>
+            <input type="text" class="col-8 m-1 username" id="farmer_pub_key" name="farmer_pub_key"
+                   placeholder="Farmer public key" value="{{farmer_pub_key|default('', true)}}">
             <input class="col-4 m-3 btn button btn-info" id="submit" name="submit" type="submit" value="Save">
             <a class="col-4 m-3 btn button btn-info" href="/control">ВЫХОД</a>
         </form>
