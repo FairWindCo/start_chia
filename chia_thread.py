@@ -60,6 +60,7 @@ class ChieThread(SeparateCycleProcessCommandThread, LogInterface):
         self.end_phase_info = ''
         self.start_phase_info = ''
         self.phase_stat = {}
+        self.work_space = 'No check'
 
     @property
     def work_free_space(self):
@@ -69,10 +70,12 @@ class ChieThread(SeparateCycleProcessCommandThread, LogInterface):
         return ChieThread(self.name + '-CL', 0, self.last, self.config)
 
     def on_end_iteration(self, index):
+        self.work_space = self.work_free_space
         with open(self.file, 'wt') as file:
             file.write(f'{index}')
 
     def on_start_iteration(self, index):
+        self.work_space = self.work_free_space
         cmd = get_command_args(self.config)
         self.config['cmd'] = cmd
 
