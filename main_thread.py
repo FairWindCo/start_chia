@@ -112,6 +112,7 @@ class MainThread(Thread):
                      for di in disk_info_data]
         memory = psutil.virtual_memory()
         now = datetime.now().strftime('%m/%d/%Y, %H:%M:%S')
+
         return {
             'load_avg': psutil.getloadavg(),
             'cpu_percent': psutil.cpu_percent(),

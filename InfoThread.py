@@ -48,7 +48,7 @@ class InfoThread(SeparateCycleThread):
         self.search_nodes = check_bool(self.main_processor.main_config.get('search_nodes', 'true'))
 
         super().__init__(name='Information Thread',
-                         inter_iteration_pause=sleep_time, pause_before=False)
+                         inter_iteration_pause=sleep_time, pause_before=True)
         self.farm_info = {}
         self.wallet_info = {'_responses': {
             'blockchain_code': -100,

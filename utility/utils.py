@@ -88,12 +88,19 @@ def disk_space(space: float) -> str:
 
 
 def work_free_space(path=None):
-    if path is None:
+    print('ANALISE PATH', path)
+    if path is None or not path:
         return 'unknown'
     try:
         if os.path.exists(path):
-            return disk_space(psutil.disk_usage(path).free)
+            space = disk_space(psutil.disk_usage(path).free)
+            print('FOUND SPACE', space)
+            return space
         else:
-            return work_free_space(os.path.join(*os.path.split(path)[:-1]))
+            head, tail = os.path.split(path)
+            if tail or os.path.exists(head):
+                return work_free_space(head)
+            else:
+                return 'unknown'
     except Exception as e:
         return 'unknown'

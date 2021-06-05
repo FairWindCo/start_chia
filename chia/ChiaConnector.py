@@ -72,12 +72,15 @@ class ChiaConnector:
                                      r'ssl/daemon/private_daemon.crt')  # root_path / net_config["daemon_ssl"]["private_crt"]
         self.key_path = os.path.join(chia_config_path,
                                      r'ssl/daemon/private_daemon.key')  # root_path / net_config["daemon_ssl"]["private_key"]
-        self.self_hostname = hostname
-        self.adapter = TLSAdapter(self.ca_crt_path, self.ca_key_path, self.crt_path, self.key_path)
-        self.session = requests.Session()
-        self.session.mount('https://', self.adapter)
+        if os.path.exists(chia_config_path):
+            self.self_hostname = hostname
+            self.adapter = TLSAdapter(self.ca_crt_path, self.ca_key_path, self.crt_path, self.key_path)
+            self.session = requests.Session()
+            self.session.mount('https://', self.adapter)
 
     def info_request(self, path, params=None, port=8555, del_success: bool = True) -> (Dict, int):
+        if self.session is None:
+            return None, -150
         if params is None:
             params = {}
         url = f'https://{self.self_hostname}:{str(port)}/'

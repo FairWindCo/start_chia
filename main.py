@@ -304,7 +304,9 @@ if __name__ == '__main__':
         try:
             app.static('/assert', get_current_path('assert'))
             try:
-                app.run('0.0.0.0', 5050)
+                app.run(processor.main_config.get('web_server_address', '0.0.0.0'),
+                        processor.main_config.get('web_server_port', 5050),
+                        debug=processor.main_config.get('web_server_debug', False))
             except Exception:
                 processor.kill_all()
         except OSError:
