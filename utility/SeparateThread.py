@@ -46,7 +46,9 @@ class SeparateCycleThread(Thread):
         at_run = calc_wakeup_time(pause)
         self.set_status(f'ПАУЗА ДО {at_run}')
         self.thread_paused = True
+        # print(f'PAUSE {self.name} {at_run}')
         self.event.wait(pause)
+        # print(f'WAKE UP {self.name}')
         self.event.clear()
         self.thread_paused = False
 

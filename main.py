@@ -228,6 +228,19 @@ async def get_wallet(request):
                         sync_height=app.ctx.processor.info.global_height)
 
 
+@app.route('/refresh_perf')
+async def get_wallet(request):
+    app.ctx.processor.perf.wakeup()
+    return jinja.render('perf.html', request, perf=app.ctx.processor.perf.performance,
+                        disk_info=app.ctx.processor.perf.disk_info)
+
+
+@app.route('/perf')
+async def get_wallet(request):
+    return jinja.render('perf.html', request, perf=app.ctx.processor.perf.performance,
+                        disk_info=app.ctx.processor.perf.disk_info)
+
+
 @app.route('/control')
 @auth.login_required(handle_no_auth=handle_no_auth)
 async def get_control(request):

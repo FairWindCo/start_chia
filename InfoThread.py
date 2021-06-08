@@ -1,11 +1,12 @@
 import re
+from datetime import datetime
 
 import requests as requests
 from bs4 import BeautifulSoup
 
 from chia.ChiaConnector import ChiaConnector
 from utility.SeparateThread import SeparateCycleThread
-from utility.utils import check_bool
+from utility.utils import check_bool, get_disks_info
 
 wallet_height_reg = re.compile(r'Wallet height:\s*(\d*).*')
 wallet_balance_reg = re.compile(r'Total Balance:\s*([\d]*\.[\d]*)\s*xch.*')

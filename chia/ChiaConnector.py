@@ -53,6 +53,7 @@ def ssl_context_for_client(
 class ChiaConnector:
     def __init__(self, chia_config_path: str = r'C:\Users\serge\.chia\mainnet\config', hostname='localhost') -> None:
         super().__init__()
+        self.session = None
         urllib3.disable_warnings()
 
         if not os.path.exists(chia_config_path) or not os.path.isdir(chia_config_path):

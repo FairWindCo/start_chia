@@ -8,15 +8,28 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0 p-lg-0 p-3" style="background-color: #fff; border:1px solid #1e2125;">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0 p-lg-0 p-3"
+                style="background-color: #fff; border:1px solid #1e2125;">
                 <li class="nav-item">
                     <a class="nav-link active" aria-current="page" href="/">Home</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link active" aria-current="page" href="/wallet">Кошелек</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link active" aria-current="page" href="/stat">Статистика</a>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="statisticsDropdown" role="button"
+                       data-bs-toggle="dropdown" aria-expanded="false">
+                        СТАТИСТИКА
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="statisticsDropdown">
+                        <li class="nav-item">
+                            <a class="nav-link active" aria-current="page" href="/perf">Производительность</a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link active" aria-current="page" href="/wallet">Кошелек</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" aria-current="page" href="/stat">Статистика</a>
+                        </li>
+                    </ul>
                 </li>
                 {% if request.ctx.session and request.ctx.session.get('_auth') %}
                 <li class="nav-item dropdown">
@@ -66,13 +79,13 @@
     {% for cat, msg in get_flashed_messages(with_categories=true) %}
     <div class="toast align-items-center text-white bg-primary border-0" role="alert" aria-live="assertive"
          aria-atomic="true">
-            <div class="toast-header">
-                <strong class="me-auto">{{ cat }}</strong>
-                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-            <div class="toast-body">
-                {{ msg }}
-            </div>
+        <div class="toast-header">
+            <strong class="me-auto">{{ cat }}</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            {{ msg }}
+        </div>
     </div>
     {% endfor %}
 </div>

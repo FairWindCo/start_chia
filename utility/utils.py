@@ -87,6 +87,23 @@ def disk_space(space: float) -> str:
         return '{:.2f}Pb'.format(space / 1024 ** 5)
 
 
+def get_disks_info_str():
+    disk_info_data = [(p.mountpoint, psutil.disk_usage(p.mountpoint))
+                      for p in psutil.disk_partitions() if p.fstype and p.opts.find('fixed') >= 0]
+    disk_info = '\n'.join([f'HDD {di[0]} {disk_space(di[1].free)}/'
+                           f'{disk_space(di[1].total)}'
+                           for di in disk_info_data])
+    return disk_info
+
+
+def get_disks_info():
+    disk_info_data = [(p.mountpoint, psutil.disk_usage(p.mountpoint))
+                      for p in psutil.disk_partitions(all=False) if p.fstype and p.opts.find('fixed') >= 0]
+    disk_info = [(di[0], disk_space(di[1].free), disk_space(di[1].total), di[1].percent)
+                 for di in disk_info_data]
+    return disk_info
+
+
 def work_free_space(path=None):
     print('ANALISE PATH', path)
     if path is None or not path:

@@ -5,11 +5,12 @@ from threading import Thread, Event
 import psutil
 
 from InfoThread import InfoThread
+from PerfThread import PerfThread
 from TelegramSenderThread import TelegramSenderThread
 from TelegramThread import TelegramThread
 from chia_thread_config import get_threads_configs, ChieThreadConfig
 from utility.SeparateSubprocessThread import get_command_for_execute_with_shell
-from utility.utils import check_bool, GIGABYTE
+from utility.utils import check_bool, GIGABYTE, get_disks_info_str
 
 
 class MainThread(Thread):
@@ -23,6 +24,7 @@ class MainThread(Thread):
         self.restart_command = False
         self.event = Event()
         self.info = None
+        self.perf = None
         self.telegram = None
         self.messager = None
 
@@ -67,9 +69,11 @@ class MainThread(Thread):
                     shell=shelling)
 
         self.info = InfoThread(self)
+        self.perf = PerfThread(self)
         self.telegram = TelegramThread(self)
         self.messager = TelegramSenderThread(self)
 
+        self.perf.start()
         self.info.start()
         self.telegram.start()
         self.messager.start()
@@ -106,18 +110,14 @@ class MainThread(Thread):
         self.telegram.shutdown()
 
     def get_main_info(self):
-        disk_info_data = [(p.mountpoint, psutil.disk_usage(p.mountpoint))
-                          for p in psutil.disk_partitions() if p.fstype and p.opts.find('fixed') >= 0]
-        disk_info = [(di[0], di[1].free / GIGABYTE, di[1].total / GIGABYTE, di[1].percent)
-                     for di in disk_info_data]
         memory = psutil.virtual_memory()
         now = datetime.now().strftime('%m/%d/%Y, %H:%M:%S')
 
         return {
-            'load_avg': psutil.getloadavg(),
+            'load_avg': self.perf.performance['load_avg'],
             'cpu_percent': psutil.cpu_percent(),
             'memory': (memory.available / GIGABYTE, memory.total / GIGABYTE),
-            'disk_info': disk_info,
+            'disk_info': self.perf.disk_info["disks"],
             'threads': self.threads,
             'current_time': now,
             'plots': self.info.wallet_info.get('count_plots', 'UNKNOWN'),
@@ -198,15 +198,10 @@ class MainThread(Thread):
 
     def get_telegram_message(self):
         now = datetime.now().strftime('%m/%d/%Y, %H:%M:%S')
-        disk_info_data = [(p.mountpoint, psutil.disk_usage(p.mountpoint))
-                          for p in psutil.disk_partitions() if p.fstype and p.opts.find('fixed') >= 0]
-        disk_info = '\n'.join([f'HDD {di[0]} {(di[1].free / GIGABYTE):.2f}/'
-                               f'{(di[1].total / GIGABYTE):.2f}Гб'
-                               for di in disk_info_data])
         context = '\n'.join(
             [f'{i:2d}.ПОТОК {thread.name} {thread.current_iteration}/{thread.last} \
                 ФАЗА {thread.phase} ПЛОТ ЗА {thread.last_iteration_time}'
              for i, thread in
              enumerate(self.threads)])
-        message = f'{now}\nИнформция о дисках\n{disk_info}\n{context}'
+        message = f'{now}\nИнформция о дисках\n{get_disks_info_str()}\n{context}'
         return message
