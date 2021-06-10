@@ -16,13 +16,14 @@ class SeparateCycleThread(Thread):
         self.event = Event()
         self.start_iteration_number = start_iteration_number
         self.inter_iteration_pause = inter_iteration_pause
+
         self.pause_before = pause_before
         self.before_start_pause = before_start_pause
         self.worked = False
         self.stop_iteration_flag = False
         self.start_process_time = None
         self.start_iteration_time = None
-        self.current_iteration = 0
+        self.current_iteration =  start_iteration_number
         self.status = 'INIT'
         self.speed = timedelta(seconds=0)
         self.thread_paused = False

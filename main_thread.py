@@ -41,6 +41,12 @@ class MainThread(Thread):
     def get_all_work_dirs(self):
         return list({conf['work_dir'] for conf in self.configs})
 
+    def add_new_thread(self, config):
+        new_threads = ChieThreadConfig(config).get_threads()
+        for thread in new_threads:
+            thread.start()
+            self.threads.append(thread)
+
     def init_thread(self):
         self.threads = [thread for conf in self.configs for thread in ChieThreadConfig(conf).get_threads()]
 

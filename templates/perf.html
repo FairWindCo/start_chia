@@ -5,11 +5,25 @@
 <div class="row flex-wrap mt-5">
     <div class="col-12 card">
         <div class="card-title text-center row">
-            <h5 class="text-center col-8">Производительность</h5>
+            <h5 class="text-center col-8">Производительность ({{disk_info['last_info']}})</h5>
             <a class="col-4 btn button btn-dark" href="/perf">Обновить</a>
             <a class="col-4 btn button btn-dark" href="/refresh_perf">ПОЛУЧИТЬ</a>
         </div>
         <div class="card-text">
+            <div class="row text-center  flex-wrap">
+                <div class="col">
+                    Загрузка процессора
+                </div>
+                <div class="col">
+                    {{ perf['cpu_percent'] }}%
+                </div>
+                <div class="col">
+                    Потребление памяти
+                </div>
+                <div class="col">
+                    {{ perf['memory'][0] }}/{{ perf['memory'][1] }}
+                </div>
+            </div>
             <div class="row text-center">
                 <div class="col">
                     Среднее значение загрузки
@@ -22,23 +36,6 @@
                 </div>
                 <div class="col">
                     {{ perf['load_avg'][2] }}% за 15 мин
-                </div>
-            </div>
-            <div class="row text-center">
-                <div class="col">
-                    Время работы в режиме
-                </div>
-                <div class="col">
-                    {{ perf['cpu'].user }} пользователь
-                </div>
-                <div class="col">
-                    {{ perf['cpu'].system }} система
-                </div>
-                <div class="col">
-                    {{ perf['cpu'].idle }} простой
-                </div>
-                <div class="col">
-                    {{ perf['cpu'].interrupt }} прерывания
                 </div>
             </div>
             <div class="row flex-row flex-wrap mt-5 align-content-center justify-content-center">
@@ -54,6 +51,23 @@
                     </div>
                 </div>
                 {% endfor %}
+            </div>
+            <div class="row text-center">
+                <div class="col">
+                    Время работы в режиме
+                </div>
+                <div class="col">
+                    {{ perf['cpu'].user|round(1) }}c пользователь
+                </div>
+                <div class="col">
+                    {{ perf['cpu'].system|round(1) }}c система
+                </div>
+                <div class="col">
+                    {{ perf['cpu'].idle|round(1) }}c простой
+                </div>
+                <div class="col">
+                    {{ perf['cpu'].interrupt|round(1) }}c прерывания
+                </div>
             </div>
         </div>
     </div>

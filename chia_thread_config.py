@@ -92,7 +92,7 @@ class ChieThreadConfig:
         self.process = [self.get_created_plots(num) for num in range(self.num_parallel)]
 
     def get_created_plots(self, number):
-        path_safe_iteration_count_file = Path(f'{self.name}_{number}')
+        path_safe_iteration_count_file = Path(f'{self.name}-{number}')
         if path_safe_iteration_count_file.exists():
             with open(path_safe_iteration_count_file, 'rt') as file:
                 created = file.readline()

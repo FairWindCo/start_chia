@@ -7,6 +7,7 @@
         <h2>Изменение задания {{name}}</h2>
         <h5 class="text-center">Выполнено {{current_task}} из {{count_task}}</h5>
         <form action="" method="POST" class="row justify-content-center align-items-center">
+            <input type="hidden" name="new_thread" value="{{new_thread}}">
             <span class="col-3">TASK</span>
             <input type="number" class="col-8 m-1 username" id="count" name="count"
                    placeholder="plot task count" value="{{count_task}}">
@@ -40,9 +41,35 @@
                         <span class="col-3">Pool public key</span>
             <input type="text" class="col-8 m-1 username" id="pool_pub_key" name="pool_pub_key"
                    placeholder="Pool public key" value="{{pool_pub_key|default('', true)}}">
-                        <span class="col-3">Farmer public key</span>
+            <span class="col-3">Farmer public key</span>
             <input type="text" class="col-8 m-1 username" id="farmer_pub_key" name="farmer_pub_key"
                    placeholder="Farmer public key" value="{{farmer_pub_key|default('', true)}}">
+            <input type="checkbox" class="col-1 username" id="bitfield_disable" name="bitfield_disable"
+                   {% if bitfield_disable %}
+                   checked
+                   {% endif %}
+                   >
+            <span class="col-3">Bitfield Disable</span>
+            <input type="checkbox" class="col-1 username" id="start_shell" name="start_shell"
+                   {% if start_shell %}
+                   checked
+                   {% endif %}
+                   >
+            <span class="col-3">Start in shell</span>
+            <input type="checkbox" class="col-1 username" id="p_open_shell" name="p_open_shell"
+                   {% if start_shell %}
+                   checked
+                   {% endif %}
+                   >
+            <span class="col-3">Surround cmd in shell</span>
+            <span class="col-3">CodePage chia output</span>
+            <input type="text" class="col-8 m-1 username" id="code_page" name="code_page"
+                placeholder="CodePage chia output" value="{{code_page|default('cp866', true)}}">
+            <span class="col-3">Shell Name</span>
+
+            <input type="text" class="col-8 m-1 username" id="shell_name" name="shell_name"
+                   placeholder="Shell Name" value="{{shell_name|default('powershell', true)}}">
+
             <input class="col-4 m-3 btn button btn-info" id="submit" name="submit" type="submit" value="Save">
             <a class="col-4 m-3 btn button btn-info" href="/control">ВЫХОД</a>
         </form>

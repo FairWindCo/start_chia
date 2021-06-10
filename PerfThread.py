@@ -3,7 +3,8 @@ from datetime import datetime
 import psutil
 
 from utility.SeparateThread import SeparateCycleThread
-from utility.utils import check_bool, get_disks_info
+from utility.utils import get_disks_info, disk_space
+
 
 class PerfThread(SeparateCycleThread):
 
@@ -31,5 +32,7 @@ class PerfThread(SeparateCycleThread):
         self.performance['update_time'] = datetime.now()
         self.performance['load_avg'] = psutil.getloadavg()
         self.performance['cpu'] = psutil.cpu_times()
+        self.performance['cpu_percent'] = psutil.cpu_percent()
+        memory = psutil.virtual_memory()
+        self.performance['memory'] = (disk_space(memory.free), disk_space(memory.total))
         return False
-

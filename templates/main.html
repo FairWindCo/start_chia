@@ -22,20 +22,6 @@
                 {{ memory[0]|round(2)  }}Гб/{{ memory[1]|round(2) }}Гб
             </div>
         </div>
-        <div class="row text-center">
-            <div class="col">
-                Среднее значение загрузки
-            </div>
-            <div class="col">
-                {{ load_avg[0] }}% за 1 мин
-            </div>
-            <div class="col">
-                {{ load_avg[1] }}% за 5 мин
-            </div>
-            <div class="col">
-                {{ load_avg[2] }}% за 15 мин
-            </div>
-        </div>
         <div class="row flex-row flex-wrap mt-5 align-content-center justify-content-center">
             {% for di in disk_info %}
             <div class="col-sm-6 col-lg-2 card m-1">
@@ -57,10 +43,16 @@
         <div class="card-title align-center align-content-center"><h6 class="">{{th.name}}</h6></div>
         <div class="card-body">
             <div class="row">
-                <div class="col-4">ВЫПОЛНЕНО</div>
-                    <div class="col-3">{{th.current_iteration}} / {{th.last}}</div>
+                <div class="col-2">ВЫПОЛНЕНО</div>
+                    <div class="col-4">{{th.current_iteration}} / {{th.last}}</div>
                     <div class="col-2">Free space</div>
-                    <div class="col-3">{{th.work_space}}</div>
+                    <div class="col-4">{{th.work_free_space}}</div>
+            </div>
+            <div class="row">
+                    <div class="col-2">TEMP DIR</div>
+                    <div class="col-4">{{th.config['temp_dir']}}</div>
+                    <div class="col-2">WORK DIR</div>
+                    <div class="col-4">{{th.config['work_dir']}}</div>
             </div>
             <div class="row">
                 <div class="col-4">ТЕКУЩАЯ ФАЗА</div>

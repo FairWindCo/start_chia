@@ -14,6 +14,7 @@ from sanic_session import Session
 from chia_thread_config import get_hash
 from main_thread import MainThread
 from utility.telegram_message import run_send_message_to_clients
+from utility.utils import check_bool
 
 
 def get_current_path(*relative_path):
@@ -252,58 +253,101 @@ async def get_log(request):
     return jinja.render('main.html', request, **app.ctx.processor.get_main_info())
 
 
+class EmptyObject(object):
+    pass
+
+
+def render_config(request, thread_info=None):
+    message = ''
+    new_thread = False
+    if thread_info is None:
+        thread_info = EmptyObject()
+        thread_info.config = app.ctx.processor.main_config
+        new_thread = True
+        thread_info.name = f'new_thread_{len(app.ctx.processor.threads)}'
+        thread_info.last = 1
+        thread_info.current_iteration = 0
+
+    if request.method == 'POST':
+        try:
+            if new_thread:
+                thread_info.config = app.ctx.processor.main_config.copy()
+                thread_info.config['name'] = thread_info.name
+            new_count = int(request.form.get('count', thread_info.last))
+            new_bucket = int(request.form.get('bucket', thread_info.config['bucket']))
+            new_ksize = int(request.form.get('k_size', thread_info.config['k_size']))
+
+            new_memory = int(request.form.get('memory', thread_info.config['memory']))
+            new_pause = int(request.form.get('pause_before_start', thread_info.config['pause_before_start']))
+            new_thread_per_plot = int(request.form.get('thread_per_plot', thread_info.config['thread_per_plot']))
+            new_parallel_plot = int(request.form.get('parallel_plot', thread_info.config['parallel_plot']))
+            new_temp = request.form.get('temp_path', '')
+            new_work = request.form.get('work_path', '')
+            if new_temp and os.path.exists(new_temp):
+                thread_info.config['temp_dir'] = new_temp
+            if new_work and os.path.exists(new_work):
+                thread_info.config['work_dir'] = new_work
+            thread_info.last = new_count
+            thread_info.config['bucket'] = new_bucket
+            thread_info.config['k_size'] = new_ksize
+            thread_info.config['thread_per_plot'] = new_thread_per_plot
+            thread_info.config['parallel_plot'] = new_parallel_plot
+            thread_info.config['memory'] = new_memory
+            thread_info.config['pause_before_start'] = new_pause
+
+            thread_info.config['fingerprint'] = request.form.get('fingerprint', thread_info.config['fingerprint'])
+            thread_info.config['pool_pub_key'] = request.form.get('pool_pub_key',
+                                                                  thread_info.config['pool_pub_key'])
+            thread_info.config['farmer_pub_key'] = request.form.get('farmer_pub_key',
+                                                                    thread_info.config['farmer_pub_key'])
+            thread_info.config['bitfield_disable'] = check_bool(request.form.get('bitfield_disable', False), False)
+            thread_info.config['start_shell'] = check_bool(request.form.get('start_shell', False), False)
+            thread_info.config['p_open_shell'] = check_bool(request.form.get('p_open_shell', False), False)
+            thread_info.config['code_page'] = request.form.get('code_page',
+                                                               thread_info.config['code_page'])
+            thread_info.config['shell_name'] = request.form.get('shell_name',
+                                                                thread_info.config['shell_name'])
+
+            if new_thread:
+                app.ctx.processor.add_new_thread(thread_info.config)
+
+        except ValueError as e:
+            message = e
+
+    return jinja.render('modify.html', request, name=thread_info.name, count_task=thread_info.last,
+                        current_task=thread_info.current_iteration, message=message,
+                        work_path=thread_info.config['work_dir'], temp_path=thread_info.config['temp_dir'],
+                        bucket=thread_info.config['bucket'], k_size=thread_info.config['k_size'],
+                        thread_per_plot=thread_info.config['thread_per_plot'],
+                        parallel_plot=thread_info.config['parallel_plot'],
+                        pause_before_start=thread_info.config['pause_before_start'],
+                        memory=thread_info.config['memory'],
+                        fingerprint=thread_info.config['fingerprint'],
+                        pool_pub_key=thread_info.config['pool_pub_key'],
+                        farmer_pub_key=thread_info.config['farmer_pub_key'],
+                        new_thread=new_thread,
+                        bitfield_disable=check_bool(thread_info.config.get('bitfield_disable', False)),
+                        start_shell=check_bool(thread_info.config.get('start_shell', False)),
+                        p_open_shell=check_bool(thread_info.config.get('p_open_shell', False)),
+                        code_page=thread_info.config['code_page'],
+                        shell_name=thread_info.config['shell_name'],
+                        )
+
+
 @app.route('/modify/<index:int>', methods=['GET', 'POST'])
 @auth.login_required(handle_no_auth=handle_no_auth)
 async def modify_count(request, index: int):
     if 0 <= index < len(app.ctx.processor.threads):
         thread_info = app.ctx.processor.threads[index]
-        message = ''
-        if request.method == 'POST':
-            try:
-                new_count = int(request.form.get('count', thread_info.last))
-                new_bucket = int(request.form.get('bucket', thread_info.config['bucket']))
-                new_ksize = int(request.form.get('k_size', thread_info.config['k_size']))
-
-                new_memory = int(request.form.get('memory', thread_info.config['memory']))
-                new_pause = int(request.form.get('pause_before_start', thread_info.config['pause_before_start']))
-                new_thread_per_plot = int(request.form.get('thread_per_plot', thread_info.config['thread_per_plot']))
-                new_parallel_plot = int(request.form.get('parallel_plot', thread_info.config['parallel_plot']))
-                new_temp = request.form.get('temp_path', '')
-                new_work = request.form.get('work_path', '')
-                if new_temp and os.path.exists(new_temp):
-                    thread_info.config['temp_dir'] = new_temp
-                if new_work and os.path.exists(new_work):
-                    thread_info.config['work_dir'] = new_work
-                thread_info.last = new_count
-                thread_info.config['bucket'] = new_bucket
-                thread_info.config['k_size'] = new_ksize
-                thread_info.config['thread_per_plot'] = new_thread_per_plot
-                thread_info.config['parallel_plot'] = new_parallel_plot
-                thread_info.config['memory'] = new_memory
-                thread_info.config['pause_before_start'] = new_pause
-
-                thread_info.config['fingerprint'] = request.form.get('fingerprint', thread_info.config['fingerprint'])
-                thread_info.config['pool_pub_key'] = request.form.get('pool_pub_key',
-                                                                      thread_info.config['pool_pub_key'])
-                thread_info.config['farmer_pub_key'] = request.form.get('farmer_pub_key',
-                                                                        thread_info.config['farmer_pub_key'])
-
-            except ValueError as e:
-                message = e
-        return jinja.render('modify.html', request, name=thread_info.name, count_task=thread_info.last,
-                            current_task=thread_info.current_iteration, message=message,
-                            work_path=thread_info.config['work_dir'], temp_path=thread_info.config['temp_dir'],
-                            bucket=thread_info.config['bucket'], k_size=thread_info.config['k_size'],
-                            thread_per_plot=thread_info.config['thread_per_plot'],
-                            parallel_plot=thread_info.config['parallel_plot'],
-                            pause_before_start=thread_info.config['pause_before_start'],
-                            memory=thread_info.config['memory'],
-                            fingerprint=thread_info.config['fingerprint'],
-                            pool_pub_key=thread_info.config['pool_pub_key'],
-                            farmer_pub_key=thread_info.config['farmer_pub_key'],
-                            )
+        return render_config(request, thread_info)
     else:
         abort(404)
+
+
+@app.route('/add/', methods=['GET', 'POST'])
+@auth.login_required(handle_no_auth=handle_no_auth)
+async def add_config(request):
+    return render_config(request)
 
 
 if __name__ == '__main__':
