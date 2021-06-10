@@ -144,7 +144,7 @@ class MainThread(Thread):
 
     def stop(self, stop_index: int):
         if 0 <= stop_index < len(self.threads):
-            self.threads[stop_index].kill()
+            self.threads[stop_index].kill_command()
             return 'THREAD STOP COMMAND!'
         else:
             return None

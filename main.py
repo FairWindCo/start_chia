@@ -310,6 +310,7 @@ def render_config(request, thread_info=None):
 
             if new_thread:
                 app.ctx.processor.add_new_thread(thread_info.config)
+                return response.redirect('/control')
 
         except ValueError as e:
             message = e

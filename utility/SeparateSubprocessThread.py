@@ -84,6 +84,7 @@ class SeparateCycleProcessCommandThread(SeparateCycleThread):
 
     def kill_command(self):
         self.stop()
+        self.wakeup()
         if self.process:
             try:
                 process = psutil.Process(self.process.pid)

@@ -35,13 +35,22 @@
                     <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
                         <li><a class="dropdown-item" href="/lastlog/{{th.name}}">ПОСЛЕДНЕЕ</a></li>
                         <li><a class="dropdown-item" href="/view_log/{{th.name}}">ЖУРНАЛ</a></li>
+                        <li><a class="dropdown-item" href="/modify/{{loop.index0}}">ИЗМЕНИТЬ</a></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
                         <li><a class="dropdown-item" href="/log/{{th.name}}">СКАЧАТЬ ЖУРНАЛ</a></li>
-                        <li><a class="dropdown-item" href="/stop/{{loop.index0}}">ОСТАНОВИТЬ</a></li>
-                        <li><a class="dropdown-item" href="/stop_iteration/{{loop.index0}}">СТОП ИТЕРАЦИИ</a></li>
-                        <li><a class="dropdown-item" href="/modify/{{loop.index0}}">ИЗМЕНИТЬ КОЛИЧЕСТВО</a></li>
-                        <li><a class="dropdown-item" href="/pause/{{loop.index0}}">ПАУЗА</a></li>
                         <li><a class="dropdown-item" href="/wakeup/{{loop.index0}}">РАЗБУДИТЬ</a></li>
+                        <li><a class="dropdown-item" href="/pause/{{loop.index0}}">ПАУЗА</a></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        {% if th.worked %}
+                        <li><a class="dropdown-item" href="/stop_iteration/{{loop.index0}}">СТОП ИТЕРАЦИИ</a></li>
+                        <li><a class="dropdown-item" href="/stop/{{loop.index0}}">ОСТАНОВИТЬ</a></li>
+                        {% else %}
                         <li><a class="dropdown-item" href="/restart/{{loop.index0}}">РЕСТАРТ</a></li>
+                        {% endif %}
                     </ul>
                 </div>
             </div>
