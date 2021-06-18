@@ -50,7 +50,8 @@ def get_threads_configs():
                       'start_node': None, 'set_peer_address': None,
                       'start_shell': False, 'shell_name': 'powershell', 'p_open_shell': False, 'code_page': 'cp1251',
                       'bitfield_disable': 'False', 'web_server_port': 5050, 'web_server_debug': False,
-                      'web_server_address': '0.0.0.0'}
+                      'web_server_address': '0.0.0.0',
+                      'web_work_dir': None, }
     if not os.path.exists('config.ini'):
         with open('config.ini', 'wt') as file:
             file.write('[default]\n')

@@ -121,3 +121,21 @@ def work_free_space(path=None):
                 return 'unknown'
     except Exception as e:
         return 'unknown'
+
+
+def is_writable(directory):
+    try:
+        tmp_prefix = "write_tester"
+        count = 0
+        filename = os.path.join(directory, tmp_prefix)
+        while os.path.exists(filename):
+            filename = "{}.{}".format(os.path.join(directory, tmp_prefix), count)
+            count = count + 1
+        f = open(filename, "w")
+        f.close()
+        os.remove(filename)
+        return True
+    except IOError as x:
+        import errno
+        if x.errno == errno.EACCES:
+            return False

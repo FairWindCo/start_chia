@@ -15,9 +15,11 @@ from utility.utils import check_bool, GIGABYTE, get_disks_info_str
 
 class MainThread(Thread):
 
-    def __init__(self):
+    def __init__(self, thread_configs, main_configs):
         super().__init__(name='MAIN PROCESSOR')
-        self.configs, self.main_config = get_threads_configs()
+        # self.configs, self.main_config = get_threads_configs()
+        self.configs = thread_configs
+        self.main_config = main_configs
         self.threads = []
         self.all_thread_stopped = True
         self.web_server_running = True

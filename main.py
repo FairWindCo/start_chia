@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 from collections import deque
 from pathlib import Path
@@ -11,7 +12,7 @@ from sanic_auth import Auth, User
 from sanic_jinja2 import SanicJinja2
 from sanic_session import Session
 
-from chia_thread_config import get_hash
+from chia_thread_config import get_hash, get_threads_configs
 from main_thread import MainThread
 from utility.telegram_message import run_send_message_to_clients
 from utility.utils import check_bool
@@ -28,7 +29,28 @@ def get_current_path(*relative_path):
 app = Sanic(name="Web Server")
 auth = Auth(app)
 session = Session(app)
-jinja = SanicJinja2(app, session=session, loader=jinja2.FileSystemLoader(get_current_path('templates')))
+template_path = get_current_path('templates')
+static_path = get_current_path('assert')
+thread_configs, main_config = get_threads_configs()
+
+main_process_name = main_config.get('machine_name', 'DEFAULT')
+
+print(f'STATIC: {static_path}\n TEMPLATE:{template_path}')
+
+web_work_dir = os.path.abspath(main_config.get('web_work_dir', None))
+new_static_path = os.path.join(web_work_dir, 'assert')
+new_template_path = os.path.join(web_work_dir, 'templates')
+if web_work_dir and os.access(web_work_dir, os.W_OK):
+    if new_static_path != static_path and shutil.copytree(static_path, new_static_path, dirs_exist_ok=True):
+        static_path = new_static_path
+        print(f'TRY USE STATIC: {new_static_path}')
+    if template_path != new_template_path and shutil.copytree(template_path, new_template_path,
+                                                              dirs_exist_ok=True):
+        template_path = new_template_path
+        print(f'TRY USE TEMPLATE: {new_template_path}')
+
+jinja = SanicJinja2(app, session=session,
+                    loader=jinja2.FileSystemLoader(template_path))
 
 
 def handle_no_auth(request):
@@ -82,7 +104,7 @@ async def view_log(request, name):
         with open(path_to_log_file, 'rt') as file:
             lines = deque(filter(lambda el: el and el[0] not in ['\n', '\r'], file.readlines()), 30)
             lines.reverse()
-        return jinja.render('lastlog.html', request, lines=lines, name=name)
+        return jinja.render('lastlog.html', request, lines=lines, name=name, main_process_name=main_process_name)
     else:
         abort(404)
 
@@ -96,60 +118,61 @@ async def stop_web_server():
 async def stop_all(request):
     context = app.ctx.processor.stop_all()
     app.add_task(stop_web_server)
-    return jinja.render('menu.html', request, context=context)
+    return jinja.render('menu.html', request, context=context, main_process_name=main_process_name)
 
 
 @app.route('/kill_threads')
 @auth.login_required(handle_no_auth=handle_no_auth)
 async def kill_threads(request):
     res = app.ctx.processor.kill_threads()
-    return jinja.render('menu.html', request, context=res)
+    return jinja.render('menu.html', request, context=res, main_process_name=main_process_name)
 
 
 @app.route('/show_config')
 @auth.login_required(handle_no_auth=handle_no_auth)
 async def show_config(request):
-    return jinja.render('configs.html', request, **app.ctx.processor.show_config())
+    return jinja.render('configs.html', request, **app.ctx.processor.show_config(), main_process_name=main_process_name)
 
 
 @app.route('/stat')
 async def show_stat(request):
-    return jinja.render('statistics.html', request, threads=app.ctx.processor.threads)
+    return jinja.render('statistics.html', request, threads=app.ctx.processor.threads,
+                        main_process_name=main_process_name)
 
 
 @app.route('/stop_iteration_all')
 @auth.login_required(handle_no_auth=handle_no_auth)
 async def stop_iteration_all(request):
     res = app.ctx.processor.stop_iteration_all()
-    return jinja.render('menu.html', request, context=res)
+    return jinja.render('menu.html', request, context=res, main_process_name=main_process_name)
 
 
 @app.route('/restart_workers')
 @auth.login_required(handle_no_auth=handle_no_auth)
 async def restart_all(request):
     res = app.ctx.processor.restart_all()
-    return jinja.render('menu.html', request, context=res)
+    return jinja.render('menu.html', request, context=res, main_process_name=main_process_name)
 
 
 @app.route('/stop_iteration/<index_element:int>')
 @auth.login_required(handle_no_auth=handle_no_auth)
 def stop_iteration(request, index_element: int):
     res = app.ctx.processor.stop_iteration(index_element)
-    return jinja.render('menu.html', request, context=res)
+    return jinja.render('menu.html', request, context=res, main_process_name=main_process_name)
 
 
 @app.route('/wakeup/<index_element:int>')
 @auth.login_required(handle_no_auth=handle_no_auth)
 def wakeup(request, index_element: int):
     res = app.ctx.processor.wakeup_thread(index_element)
-    return jinja.render('menu.html', request, context=res)
+    return jinja.render('menu.html', request, context=res, main_process_name=main_process_name)
 
 
 @app.route('/restart/<index_element:int>')
 @auth.login_required(handle_no_auth=handle_no_auth)
 def wakeup(request, index_element: int):
     res = app.ctx.processor.restart_thread(index_element)
-    return jinja.render('menu.html', request, context=res)
+    return jinja.render('menu.html', request, context=res, main_process_name=main_process_name)
 
 
 @app.route('/pause/<index_element:int>', methods=['GET', 'POST'])
@@ -166,7 +189,8 @@ def pause(request, index_element: int):
             return jinja.render('menu.html', request, context=res)
         message = 'ПОТОК УЖЕ НА ПАУЗЕ' if thread_info.thread_paused else ''
         return jinja.render('pause.html', request, name=thread_info.name, count_task=thread_info.last,
-                            current_task=thread_info.current_iteration, message=message)
+                            current_task=thread_info.current_iteration, message=message,
+                            main_process_name=main_process_name)
     else:
         abort(404)
 
@@ -181,7 +205,7 @@ async def stop(request, stop_index: int):
 
     else:
         context = 'NO PROCESSOR'
-    return jinja.render('menu.html', request, context=context)
+    return jinja.render('menu.html', request, context=context, main_process_name=main_process_name)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -202,7 +226,7 @@ async def login(request):
         if username or password:
             jinja.flash(request, 'invalid username or password')
             message = 'invalid username or password'
-    return jinja.render('login.html', request, message=message)
+    return jinja.render('login.html', request, message=message, main_process_name=main_process_name)
 
 
 @app.route('/logout')
@@ -218,7 +242,7 @@ async def get_wallet(request):
     return jinja.render('wallet.html', request, wallet=app.ctx.processor.info.wallet_info,
                         farm_info=app.ctx.processor.info.farm_info,
                         sync_status=app.ctx.processor.info.global_sync,
-                        sync_height=app.ctx.processor.info.global_height)
+                        sync_height=app.ctx.processor.info.global_height, main_process_name=main_process_name)
 
 
 @app.route('/wallet')
@@ -226,31 +250,32 @@ async def get_wallet(request):
     return jinja.render('wallet.html', request, wallet=app.ctx.processor.info.wallet_info,
                         farm_info=app.ctx.processor.info.farm_info,
                         sync_status=app.ctx.processor.info.global_sync,
-                        sync_height=app.ctx.processor.info.global_height)
+                        sync_height=app.ctx.processor.info.global_height, main_process_name=main_process_name)
 
 
 @app.route('/refresh_perf')
 async def get_wallet(request):
     app.ctx.processor.perf.wakeup()
     return jinja.render('perf.html', request, perf=app.ctx.processor.perf.performance,
-                        disk_info=app.ctx.processor.perf.disk_info)
+                        disk_info=app.ctx.processor.perf.disk_info, main_process_name=main_process_name)
 
 
 @app.route('/perf')
 async def get_wallet(request):
     return jinja.render('perf.html', request, perf=app.ctx.processor.perf.performance,
-                        disk_info=app.ctx.processor.perf.disk_info)
+                        disk_info=app.ctx.processor.perf.disk_info, main_process_name=main_process_name)
 
 
 @app.route('/control')
 @auth.login_required(handle_no_auth=handle_no_auth)
 async def get_control(request):
-    return jinja.render('control.html', request, **app.ctx.processor.get_main_info())
+    return jinja.render('control.html', request, **app.ctx.processor.get_main_info(),
+                        main_process_name=main_process_name)
 
 
 @app.route('/')
 async def get_log(request):
-    return jinja.render('main.html', request, **app.ctx.processor.get_main_info())
+    return jinja.render('main.html', request, **app.ctx.processor.get_main_info(), main_process_name=main_process_name)
 
 
 class EmptyObject(object):
@@ -355,12 +380,12 @@ if __name__ == '__main__':
     if len(sys.argv) > 1 and sys.argv[1] == 'telegram':
         run_send_message_to_clients(['me', 'me'], 'TEST', '', '')
     else:
-        processor = MainThread()
+        processor = MainThread(thread_configs, main_config)
         app.ctx.processor = processor
         app.ctx.jinja = jinja
         processor.start()
         try:
-            app.static('/assert', get_current_path('assert'))
+            app.static('/assert', static_path)
             try:
                 app.run(processor.main_config.get('web_server_address', '0.0.0.0'),
                         processor.main_config.get('web_server_port', 5050),
