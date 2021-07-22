@@ -8,9 +8,9 @@ from InfoThread import InfoThread
 from PerfThread import PerfThread
 from TelegramSenderThread import TelegramSenderThread
 from TelegramThread import TelegramThread
-from chia_thread_config import get_threads_configs, ChieThreadConfig
+from chia_thread_config import ChieThreadConfig
 from utility.SeparateSubprocessThread import get_command_for_execute_with_shell
-from utility.utils import check_bool, GIGABYTE, get_disks_info_str
+from utility.utils import check_bool, GIGABYTE, get_disks_info_str, get_from_dicts
 
 
 class MainThread(Thread):
@@ -129,6 +129,8 @@ class MainThread(Thread):
             'threads': self.threads,
             'current_time': now,
             'plots': self.info.wallet_info.get('count_plots', 'UNKNOWN'),
+            'farm_sync': get_from_dicts(self.info.wallet_info, 'blockchain.blockchain_state.sync.synced'),
+            'wallet_sync': get_from_dicts(self.info.wallet_info, 'wallet_sync.synced'),
             'sync': self.info.global_sync,
         }
 

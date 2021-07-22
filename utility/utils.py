@@ -139,3 +139,18 @@ def is_writable(directory):
         import errno
         if x.errno == errno.EACCES:
             return False
+
+
+def get_from_dicts(dict_: dict, name: str):
+    if name and dict_:
+        pos = name.find('.')
+        if pos > 0:
+            current_element = dict_.get(name[:pos], None)
+            if current_element and isinstance(current_element, dict):
+                return get_from_dicts(current_element, name[pos+1:])
+            else:
+                return current_element
+        else:
+            return dict_.get(name, None)
+    else:
+        return None

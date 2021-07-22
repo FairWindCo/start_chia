@@ -332,6 +332,11 @@ def render_config(request, thread_info=None):
                                                                thread_info.config['code_page'])
             thread_info.config['shell_name'] = request.form.get('shell_name',
                                                                 thread_info.config['shell_name'])
+            thread_info.config['pool_contract_address'] = request.form.get('pool_contract_address',
+                                                                    thread_info.config['pool_contract_address'])
+            if thread_info.config['pool_contract_address'] is not None:
+                thread_info.config['fingerprint'] = None
+                thread_info.config['pool_pub_key'] = None
 
             if new_thread:
                 app.ctx.processor.add_new_thread(thread_info.config)

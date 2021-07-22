@@ -36,6 +36,8 @@ def convert_param_to_attribute(key, value):
         return f'-p {value}'
     if key == 'farmer_pub_key' and value:
         return f'-f {value}'
+    if key == 'pool_contract_address' and value:
+        return f'-с {value}'
     return ''
 
 

@@ -29,7 +29,7 @@ THREAD_CHIA_PROPERTY = ['chia_path',
                         'auto_find_exe',
                         'pause_before_start',
                         'recheck_work_dir',
-                        'fingerprint', 'pool_pub_key', 'farmer_pub_key',
+                        'fingerprint', 'pool_pub_key', 'farmer_pub_key', 'pool_contract_address',
                         'start_node', 'set_peer_address',
                         'start_shell', 'shell_name', 'p_open_shell', 'code_page',
                         'bitfield_disable']
@@ -46,7 +46,7 @@ def get_threads_configs():
                       'auto_find_exe': True,
                       'pause_before_start': 0,
                       'recheck_work_dir': False,
-                      'fingerprint': None, 'pool_pub_key': None, 'farmer_pub_key': None,
+                      'fingerprint': None, 'pool_pub_key': None, 'farmer_pub_key': None, 'pool_contract_address': None,
                       'start_node': None, 'set_peer_address': None,
                       'start_shell': False, 'shell_name': 'powershell', 'p_open_shell': False, 'code_page': 'cp1251',
                       'bitfield_disable': 'False', 'web_server_port': 5050, 'web_server_debug': False,
@@ -86,6 +86,13 @@ def get_threads_configs():
 class ChieThreadConfig:
     def __init__(self, config):
         self.config = config
+        # pool_contract_address TEXT
+        #                                   Address of where the pool reward will be
+        #                                   sent to. Only used if alt_fingerprint and
+        #                                   pool public key are None
+        if config['pool_contract_address'] is not None:
+            config['fingerprint'] = None
+            config['pool_pub_key'] = None
         self.name = config['name']
         self.num_plots = int(config.get('plots_count', 1))
         self.num_parallel = int(config.get('parallel_plot', 1))
